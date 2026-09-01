@@ -1,0 +1,77 @@
+{
+  "providers": [
+    { "id": "favorites", "label": "Favorites", "icon": "star" },
+    { "id": "gemini", "label": "Google Gemini", "icon": "gemini" },
+    { "id": "openai", "label": "OpenAI", "icon": "openai" },
+    { "id": "anthropic", "label": "Anthropic (Claude)", "icon": "anthropic" },
+    { "id": "meta", "label": "Meta (Llama)", "icon": "meta" },
+    { "id": "deepseek", "label": "DeepSeek", "icon": "deepseek" },
+    { "id": "mistral", "label": "Mistral AI", "icon": "mistral" },
+    { "id": "xai", "label": "xAI (Grok)", "icon": "xai" },
+    { "id": "perplexity", "label": "Perplexity", "icon": "perplexity" },
+    { "id": "cohere", "label": "Cohere", "icon": "cohere" },
+    { "id": "qwen", "label": "Qwen (Alibaba)", "icon": "qwen" },
+    { "id": "bedrock", "label": "Amazon Bedrock", "icon": "bedrock" },
+    { "id": "together", "label": "Together AI", "icon": "together" },
+    { "id": "groq", "label": "Groq", "icon": "groq" },
+    { "id": "ollama", "label": "Ollama (Local)", "icon": "ollama" },
+    { "id": "databricks", "label": "Databricks", "icon": "databricks" },
+    { "id": "ai21", "label": "AI21 Labs", "icon": "ai21" },
+    { "id": "fireworks", "label": "Fireworks AI", "icon": "fireworks" },
+    { "id": "huggingface", "label": "Hugging Face", "icon": "huggingface" }
+  ],
+  "modelData": {
+    "favorites": {
+      "models": [
+        { "name": "Gemini 3 Flash", "price": "$··", "favorited": true, "dim": false, "caps": ["vision", "reasoning", "tool"], "desc": "Lightning-fast with surprising capability", "hidden": false },
+        { "name": "Gemini 3.5 Flash-Lite", "price": "$··", "favorited": true, "dim": false, "caps": ["vision", "tool", "fast"], "desc": "Efficient agentic model for high-volume workloads", "hidden": false }
+      ],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "gemini": {
+      "models": [
+        { "name": "Gemini 3 Flash", "price": "$··", "favorited": true, "dim": false, "caps": ["vision", "reasoning", "tool"], "desc": "Lightning-fast with surprising capability", "hidden": false },
+        { "name": "Gemini 3.7 Flash", "price": "$··", "favorited": false, "dim": true, "caps": ["vision", "reasoning"], "desc": "Fast multimodal reasoning for agentic workflows", "hidden": false },
+        { "name": "Gemini 3.6 Flash", "price": "$$·", "favorited": false, "dim": true, "caps": ["reasoning", "tool"], "desc": "Efficient reasoning for coding and agentic workflows", "hidden": false },
+        { "name": "Gemini 3.5 Flash-Lite", "price": "$··", "favorited": false, "dim": false, "caps": ["vision", "tool", "fast"], "desc": "Efficient agentic model for high-volume workloads", "hidden": false },
+        { "name": "Gemini 3.5 Flash", "price": "$$·", "favorited": false, "dim": true, "caps": ["vision", "fast"], "desc": "Next-gen Flash speed with stronger quality per token", "hidden": false },
+        { "name": "Gemma 4 26B A4B", "price": null, "favorited": false, "dim": false, "caps": ["vision", "reasoning"], "desc": "Efficient multimodal Google MoE with optional thinking", "hidden": false },
+        { "name": "Gemini 3.1 Flash Lite", "price": "$··", "favorited": false, "dim": true, "caps": ["fast"], "desc": "Lightweight Flash variant for cost-sensitive workloads", "hidden": false }
+      ],
+      "legacy": ["Gemini 2.5 Flash", "Gemini 2.0 Flash"],
+      "legacyLabel": "2 legacy models"
+    },
+    "openai": {
+      "models": [
+        { "name": "GPT-5.2", "price": "$$$+", "favorited": false, "dim": false, "caps": ["reasoning", "tool", "vision"], "desc": "OpenAI general-purpose flagship model", "hidden": false },
+        { "name": "GPT-5.2 mini", "price": "$$·", "favorited": false, "dim": true, "caps": ["fast", "tool"], "desc": "Smaller GPT-5.2 tuned for speed and low cost", "hidden": false },
+        { "name": "GPT Image Gen 3", "price": "$$$+", "favorited": false, "dim": false, "caps": ["image"], "desc": "OpenAI image generation model", "hidden": false },
+        { "name": "GPT-5.1 Turbo", "price": "$$·", "favorited": false, "dim": true, "caps": ["reasoning", "vision"], "desc": "Balanced reasoning and multimodal input", "hidden": false }
+      ],
+      "legacy": ["GPT-4o", "GPT-4 Turbo", "GPT-3.5 Turbo"],
+      "legacyLabel": "3 legacy models"
+    },
+    "anthropic": {
+      "models": [
+        { "name": "Claude Opus 5", "price": "$$$+", "favorited": true, "dim": false, "caps": ["reasoning", "vision", "tool", "pdf"], "desc": "Anthropic's most capable model", "hidden": false },
+        { "name": "Claude Sonnet 5", "price": "$$·", "favorited": false, "dim": false, "caps": ["reasoning", "vision", "tool", "pdf"], "desc": "Balanced performance for everyday tasks", "hidden": false },
+        { "name": "Claude Haiku 4.5", "price": "$·", "favorited": false, "dim": false, "caps": ["fast", "tool"], "desc": "Fastest Claude model for high-volume use", "hidden": false },
+        { "name": "Claude Fable 5", "price": "$$$·", "favorited": false, "dim": true, "caps": ["reasoning", "vision"], "desc": "Mythos-tier model with added safety measures", "hidden": false }
+      ],
+      "legacy": ["Claude 3.7 Sonnet", "Claude 3.5 Sonnet", "Claude 3 Opus"],
+      "legacyLabel": "3 legacy models"
+    },
+    "deepseek": {
+      "models": [
+        { "name": "DeepSeek v4 Pro (0813)", "price": "$$·", "favorited": false, "dim": false, "caps": ["reasoning"], "desc": "General-availability DeepSeek V4 Pro release", "hidden": false },
+        { "name": "DeepSeek v4 Flash (0731)", "price": null, "favorited": false, "dim": true, "caps": ["reasoning"], "desc": "Re-post-trained DeepSeek V4 Flash", "hidden": false },
+        { "name": "DeepSeek v4 Flash", "price": null, "favorited": false, "dim": true, "caps": ["reasoning"], "desc": "Fast, cost-efficient DeepSeek V4 model", "hidden": false },
+        { "name": "DeepSeek v4 Pro", "price": "$$·", "favorited": false, "dim": false, "caps": ["reasoning"], "desc": "DeepSeek's flagship V4 reasoning model", "hidden": false },
+        { "name": "DeepSeek v3.2", "price": null, "favorited": false, "dim": true, "caps": ["reasoning"], "desc": "Sparse attention for efficient long-context work", "hidden": false }
+      ],
+      "legacy": ["DeepSeek v3", "DeepSeek v3 Base", "DeepSeek Coder v2", "DeepSeek v2.5"],
+      "legacyLabel": "4 legacy models"
+    }
+  }
+}

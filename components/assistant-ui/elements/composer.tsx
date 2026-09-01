@@ -78,7 +78,7 @@ export const ComposerContext: FC<{
   const offset = c * (1 - pct);
   return (
     <div data-slot="composer-context" className={cn("relative group flex items-center", className)}>
-      <div className="pointer-events-none absolute bottom-full end-0 z-50 mb-2 hidden w-56 rounded-xl border bg-popover p-3 shadow-md group-hover:block group-focus-within:block">
+      <div className="absolute bottom-full end-0 z-50 mb-2 hidden w-56 rounded-xl border bg-popover p-3 shadow-md group-hover:block group-focus-within:block group-hover:pointer-events-auto">
         <div className="mb-2 text-xs font-medium">Context usage</div>
         <div className="mb-2 flex h-1.5 overflow-hidden rounded-full bg-muted">
           <div className="bg-sky-500" style={{ width: `${total ? (system / total) * 100 : 0}%` }} />

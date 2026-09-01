@@ -34,11 +34,9 @@ import {
 import { ComposerTriggerPopover } from "@/components/assistant-ui/elements/composer-trigger-popover.aui";
 import {
   ComposerContext,
-  ComposerMenu,
-  ComposerModelItem,
   ComposerModelTrigger,
-  type ComposerModel,
 } from "@/components/assistant-ui/elements/composer";
+import { ModelSelectionPopup } from "@/components/assistant-ui/model-selection";
 import {
   ActionBarMorePrimitive,
   ActionBarPrimitive,
@@ -243,43 +241,36 @@ const ThreadRoot: FC<{ isEmpty: boolean; autoFocus: boolean }> = ({
         <ThreadPrimitive.Viewport
         turnAnchor="top"
         data-slot="aui_thread-viewport"
-        className="relative flex flex-1 flex-col overflow-x-auto overflow-y-scroll scroll-smooth"
+        className="relative flex flex-1 flex-col overflow-x-hidden overflow-y-auto scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
       >
-        <div
-          className={cn(
-            "mx-auto flex w-full max-w-(--thread-max-width) flex-1 flex-col px-4 pt-4",
-            isEmpty && "justify-center",
-          )}
-        >
-          <AuiIf condition={isNewChatView}>
-            <Welcome />
-          </AuiIf>
-          <AuiIf condition={isHistoryLoadingView}>
-            <ThreadHistorySkeleton />
-          </AuiIf>
+        <div className="mx-auto flex w-full max-w-(--thread-max-width) flex-1 flex-col px-4 pt-4">
+          <div className="flex flex-1 flex-col">
+            <AuiIf condition={isNewChatView}>
+              <div className="flex flex-1 items-center justify-center py-12">
+                <Welcome />
+              </div>
+            </AuiIf>
+            <AuiIf condition={isHistoryLoadingView}>
+              <ThreadHistorySkeleton />
+            </AuiIf>
 
-          <div
-            data-slot="aui_message-group"
-            className="mb-14 flex flex-col gap-y-6 empty:hidden"
-          >
-            <ThreadPrimitive.Messages>
-              {() => <ThreadMessage />}
-            </ThreadPrimitive.Messages>
+            <div
+              data-slot="aui_message-group"
+              className="flex flex-col gap-y-6 empty:hidden mb-6"
+            >
+              <ThreadPrimitive.Messages>
+                {() => <ThreadMessage />}
+              </ThreadPrimitive.Messages>
+            </div>
           </div>
 
-          <ThreadPrimitive.ViewportFooter
-            className={cn(
-              "aui-thread-viewport-footer bg-background flex flex-col gap-4 overflow-visible pb-4 md:pb-6",
-              !isEmpty &&
-                "sticky bottom-0 mt-auto rounded-t-(--composer-radius)",
-            )}
-          >
-            <ThreadScrollToBottom />
-            <ThreadFollowupSuggestions />
-            <Composer autoFocus={autoFocus} />
+          <ThreadPrimitive.ViewportFooter className="aui-thread-viewport-footer bg-background sticky bottom-0 mt-auto flex flex-col gap-4 overflow-visible pb-4 md:pb-6 rounded-t-(--composer-radius)">
             <AuiIf condition={(s) => isNewChatView(s) && s.composer.isEmpty}>
               <ThreadSuggestions />
             </AuiIf>
+            <ThreadFollowupSuggestions />
+            <ThreadScrollToBottom />
+            <Composer autoFocus={autoFocus} />
           </ThreadPrimitive.ViewportFooter>
         </div>
       </ThreadPrimitive.Viewport>
@@ -462,6 +453,9 @@ const Composer: FC<{ autoFocus: boolean }> = ({ autoFocus }) => {
     commands: slashCommands,
   });
 
+  const hasAttachmentError = useAuiState((s) =>
+    s.composer.attachments.some((a: any) => a.status?.type === "incomplete" && a.status?.reason === "error"),
+  );
   return (
     <ComposerPrimitive.Unstable_TriggerPopoverRoot>
       <ComposerPrimitive.Root className="aui-composer-root relative flex w-full flex-col">
@@ -469,7 +463,12 @@ const Composer: FC<{ autoFocus: boolean }> = ({ autoFocus }) => {
           render={
             <div
               data-slot="aui_composer-shell"
-              className="border-border/60 data-[dragging=true]:border-ring focus-within:border-border dark:border-muted-foreground/15 dark:focus-within:border-muted-foreground/30 flex w-full cursor-text flex-col gap-2 rounded-(--composer-radius) border bg-(--composer-bg) p-(--composer-padding) transition-[border-color] data-[dragging=true]:border-dashed data-[dragging=true]:bg-[color-mix(in_oklab,var(--color-accent)_50%,var(--color-background))]"
+              className={cn(
+                "flex w-full cursor-text flex-col gap-2 rounded-(--composer-radius) border bg-(--composer-bg) p-(--composer-padding) transition-[border-color] data-[dragging=true]:border-dashed data-[dragging=true]:bg-[color-mix(in_oklab,var(--color-accent)_50%,var(--color-background))]",
+                hasAttachmentError
+                  ? "border-destructive ring-destructive/20 focus-within:border-destructive"
+                  : "border-border/60 data-[dragging=true]:border-ring focus-within:border-border dark:border-muted-foreground/15 dark:focus-within:border-muted-foreground/30",
+              )}
             />
           }
         >
@@ -498,37 +497,25 @@ const Composer: FC<{ autoFocus: boolean }> = ({ autoFocus }) => {
 
 const ComposerModelPicker: FC = () => {
   const aui = useAui();
-  const models: ComposerModel[] = useMemo(
-    () => [
-      { name: "GPT-4o", meta: "$5/M" },
-      { name: "Claude 4", meta: "$3/M" },
-      { name: "Gemini 2.5", meta: "$1/M" },
-    ],
-    [],
-  );
-  const [selected, setSelected] = useState<ComposerModel>(models[0]!);
+  const [selected, setSelected] = useState("Gemini 3 Flash");
   const [open, setOpen] = useState(false);
   useEffect(() => {
     return aui.modelContext.register({
-      getModelContext: () => ({ config: { modelName: selected.name } }),
+      getModelContext: () => ({ config: { modelName: selected } }),
     });
   }, [aui, selected]);
   return (
     <div className="relative">
-      <ComposerModelTrigger model={selected.name} open={open} onClick={() => setOpen((v) => !v)} />
-      <ComposerMenu open={open}>
-        {models.map((entry) => (
-          <ComposerModelItem
-            key={entry.name}
-            entry={entry}
-            selected={entry.name === selected.name}
-            onClick={() => {
-              setSelected(entry);
-              setOpen(false);
-            }}
-          />
-        ))}
-      </ComposerMenu>
+      <ComposerModelTrigger model={selected} open={open} onClick={() => setOpen((v) => !v)} />
+      <ModelSelectionPopup
+        open={open}
+        onClose={() => setOpen(false)}
+        selectedName={selected}
+        onSelect={(name) => {
+          setSelected(name);
+          setOpen(false);
+        }}
+      />
     </div>
   );
 };
@@ -537,15 +524,36 @@ const ComposerContextRail: FC = () => {
   const used = useAuiState((s) =>
     s.thread.messages.reduce((sum: number, m: any) => {
       const steps: any[] = m.metadata?.steps ?? [];
-      return (
-        sum +
-        steps.reduce(
-          (a: number, step: any) => a + (step.usage?.inputTokens ?? 0) + (step.usage?.outputTokens ?? 0),
-          0,
-        )
-      );
+      if (steps.length) {
+        return (
+          sum +
+          steps.reduce(
+            (a: number, step: any) => a + (step.usage?.inputTokens ?? 0) + (step.usage?.outputTokens ?? 0),
+            0,
+          )
+        );
+      }
+      const tok: any = (m.metadata as any)?.tokenUsage ?? getThreadMessageTokenUsage(m as any);
+      if (tok) return sum + (tok.totalTokens ?? (tok.inputTokens ?? 0) + (tok.outputTokens ?? 0));
+      const innerSym = Object.getOwnPropertySymbols(m).find((sym) => sym.description === "innerMessage");
+      const inner: any = innerSym ? (m as any)[innerSym] : null;
+      if (Array.isArray(inner)) {
+        for (const im of inner) {
+          const u: any = im?.metadata?.tokenUsage;
+          if (u) return sum + (u.totalTokens ?? (u.inputTokens ?? 0) + (u.outputTokens ?? 0));
+        }
+      }
+      return sum;
     }, 0),
   );
+  const isRunning = useAuiState((s) => s.thread.isRunning);
+  if (isRunning && used === 0) {
+    return (
+      <div className="grid size-8 place-items-center rounded-full border bg-background">
+        <div className="size-4 animate-spin rounded-full border-2 border-muted border-t-sky-500" />
+      </div>
+    );
+  }
   return (
     <ComposerContext usage={{ system: 1, tools: 3, messages: Math.round(used / 1000), total: 200 }} />
   );

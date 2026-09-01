@@ -19,11 +19,13 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { ModeToggle } from "@/components/mode-toggle";
 import { ThreadListSidebar } from "@/components/assistant-ui/threadlist-sidebar";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createMastraThreadListAdapter } from "./assistant/thread-list-adapter";
 import { RESOURCE_ID_KEY } from "@/lib/mastra/memory-queries";
+import { attachmentAdapter } from "@/lib/attachment-adapter";
 
 export const Assistant = ({
   threadId: initialThreadId,
@@ -95,6 +97,7 @@ export const Assistant = ({
         adapters: {
           speech: speechAdapter,
           dictation: dictationAdapter,
+          attachments: attachmentAdapter,
         },
         sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
         transport: new AssistantChatTransport({
@@ -163,6 +166,9 @@ export const Assistant = ({
           <SidebarInset>
             <header className="flex h-16 shrink-0 items-center gap-2  px-4">
               <SidebarTrigger />
+              <div className="ml-auto">
+                <ModeToggle />
+              </div>
             </header>
             <div className="flex-1 overflow-hidden">
               <Thread />

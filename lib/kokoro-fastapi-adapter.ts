@@ -12,10 +12,34 @@ export interface KokoroFastAPIOptions {
 const SAMPLE_RATE = 24000;
 const BYTES_PER_SAMPLE = 2;
 
+function stripWorkingMemoryTTS(text: string): string {
+  const normalized = text.replace(/\r\n/g, "\n").trimStart();
+  if (normalized.startsWith("# User Profile")) {
+    const lines = normalized.split("\n");
+    let end = 0;
+    while (end < lines.length && (lines[end].trim() === "" || lines[end].trim().startsWith("#") || lines[end].trim().startsWith("- "))) end++;
+    const rest = lines.slice(end).join("\n").trim();
+    if (!rest) return "";
+    return rest.replace(/Working Memory/gi, "").trim();
+  }
+  if (/Memory updated/i.test(text)) return "";
+  return text;
+}
+
 export class KokoroFastAPIAdapter implements SpeechSynthesisAdapter {
   constructor(private options: KokoroFastAPIOptions) {}
 
   speak(text: string): SpeechSynthesisAdapter.Utterance {
+    const filtered = stripWorkingMemoryTTS(text);
+    if (!filtered.trim()) {
+      let status: SpeechSynthesisAdapter.Status = { type: "ended", reason: "cancelled" };
+      return {
+        get status() { return status; },
+        cancel() {},
+        subscribe() { return () => {}; },
+      };
+    }
+    text = filtered;
     const subscribers = new Set<() => void>();
     let status: SpeechSynthesisAdapter.Status = { type: "starting" };
     const controller = new AbortController();

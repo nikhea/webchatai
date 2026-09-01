@@ -7,14 +7,20 @@ export async function POST(req: Request) {
     messages,
     system,
     tools,
+    config,
+    callSettings,
   }: {
     messages: UIMessage[];
     system?: string;
     tools?: Record<string, { description?: string; parameters: JSONSchema7 }>;
+    config?: { modelName?: string };
+    callSettings?: Record<string, unknown>;
   } = await req.json();
 
+  const modelName = config?.modelName ?? (callSettings as any)?.modelName ?? "gpt-5.6-luna";
+
   const result = streamText({
-    model: openai.responses("gpt-5.6-luna"),
+    model: openai.responses(modelName as any),
     messages: await convertToModelMessages(injectQuoteContext(messages)),
     system,
     tools: {

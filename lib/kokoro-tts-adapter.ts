@@ -31,6 +31,20 @@ function chunkText(text: string, maxLen: number): string[] {
   return chunks.map((c) => c.trim()).filter(Boolean);
 }
 
+function stripWorkingMemoryTTS(text: string): string {
+  const normalized = text.replace(/\r\n/g, "\n").trimStart();
+  if (normalized.startsWith("# User Profile")) {
+    const lines = normalized.split("\n");
+    let end = 0;
+    while (end < lines.length && (lines[end].trim() === "" || lines[end].trim().startsWith("#") || lines[end].trim().startsWith("- "))) end++;
+    const rest = lines.slice(end).join("\n").trim();
+    if (!rest) return "";
+    return rest.replace(/Working Memory/gi, "").trim();
+  }
+  if (/Memory updated/i.test(text)) return "";
+  return text;
+}
+
 type KokoroTTSInstance = Awaited<ReturnType<typeof import("kokoro-js").KokoroTTS.from_pretrained>>;
 let kokoroPromise: Promise<KokoroTTSInstance> | null = null;
 let kokoroLoadError: unknown = null;
@@ -124,6 +138,16 @@ export class KokoroTTSAdapter implements SpeechSynthesisAdapter {
   }
 
   speak(text: string): SpeechSynthesisAdapter.Utterance {
+    const filtered = stripWorkingMemoryTTS(text);
+    if (!filtered.trim()) {
+      let status: SpeechSynthesisAdapter.Status = { type: "ended", reason: "cancelled" } as any;
+      return {
+        get status() { return status; },
+        cancel() {},
+        subscribe() { return () => {}; },
+      } as any;
+    }
+    text = filtered;
     if (typeof window === "undefined") {
       return this.fallback.speak(text);
     }
