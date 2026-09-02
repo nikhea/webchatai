@@ -14,14 +14,12 @@ import {
 } from "@assistant-ui/react-ai-sdk";
 import { lastAssistantMessageIsCompleteWithToolCalls } from "ai";
 import { Thread } from "@/components/assistant-ui/thread";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/mode-toggle";
 import { ThreadListSidebar } from "@/components/assistant-ui/threadlist-sidebar";
 import { ThreadSearchDialog } from "@/components/assistant-ui/thread-search-dialog";
+import { PanelLeftIcon, SearchIcon, PlusIcon } from "lucide-react";
+import { useAui } from "@assistant-ui/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createMastraThreadListAdapter } from "./assistant/thread-list-adapter";
@@ -166,12 +164,7 @@ export const Assistant = ({
         <div className="flex h-dvh w-full pr-0.5">
           <ThreadListSidebar onSearchOpen={() => setSearchOpen(true)} />
           <SidebarInset className="relative">
-            <header className="flex h-16 shrink-0 items-center gap-2  px-4">
-              <SidebarTrigger />
-              <div className="ml-auto">
-                <ModeToggle />
-              </div>
-            </header>
+            <AssistantHeader onSearchOpen={() => setSearchOpen(true)} />
             <div className="flex-1 overflow-hidden">
               <Thread />
             </div>
@@ -182,3 +175,45 @@ export const Assistant = ({
     </AssistantRuntimeProvider>
   );
 };
+
+function AssistantHeader({ onSearchOpen }: { onSearchOpen: () => void }) {
+  const { state, isMobile, toggleSidebar } = useSidebar();
+  const isCollapsed = state === "collapsed" && !isMobile;
+  const aui = useAui();
+
+  return (
+    <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+      {isCollapsed ? (
+        <div className="bg-zinc-900 flex items-center gap-0.5 rounded-lg border border-zinc-800 p-1 shadow-sm">
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            aria-label="Expand sidebar"
+            className="grid size-7 place-items-center rounded-md text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+          >
+            <PanelLeftIcon className="size-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onSearchOpen}
+            aria-label="Search"
+            className="grid size-7 place-items-center rounded-md text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+          >
+            <SearchIcon className="size-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => (aui as unknown as { threads: { switchToNewThread: () => void } }).threads.switchToNewThread()}
+            aria-label="New chat"
+            className="grid size-7 place-items-center rounded-md text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+          >
+            <PlusIcon className="size-4" />
+          </button>
+        </div>
+      ) : null}
+      <div className="ml-auto">
+        <ModeToggle />
+      </div>
+    </header>
+  );
+}

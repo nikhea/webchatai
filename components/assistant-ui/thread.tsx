@@ -71,12 +71,15 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ClockIcon,
+  CodeXmlIcon,
   CopyIcon,
   CpuIcon,
   DatabaseIcon,
   DownloadIcon,
+  GraduationCapIcon,
   MicIcon,
   MoreHorizontalIcon,
+  NewspaperIcon,
   PencilIcon,
   RefreshCwIcon,
   SettingsIcon,
@@ -246,7 +249,7 @@ const ThreadRoot: FC<{ isEmpty: boolean; autoFocus: boolean }> = ({
         <div className="mx-auto flex w-full max-w-(--thread-max-width) flex-1 flex-col px-4 pt-4">
           <div className="flex flex-1 flex-col">
             <AuiIf condition={isNewChatView}>
-              <div className="flex flex-1 items-center justify-center py-12">
+              <div className="flex flex-1 items-center justify-center py-8 md:py-12">
                 <Welcome />
               </div>
             </AuiIf>
@@ -265,9 +268,6 @@ const ThreadRoot: FC<{ isEmpty: boolean; autoFocus: boolean }> = ({
           </div>
 
           <ThreadPrimitive.ViewportFooter className="aui-thread-viewport-footer bg-background sticky bottom-0 mt-auto flex flex-col gap-4 overflow-visible pb-4 md:pb-6 rounded-t-(--composer-radius)">
-            <AuiIf condition={(s) => isNewChatView(s) && s.composer.isEmpty}>
-              <ThreadSuggestions />
-            </AuiIf>
             <ThreadFollowupSuggestions />
             <ThreadScrollToBottom />
             <Composer autoFocus={autoFocus} />
@@ -371,43 +371,119 @@ const ThreadScrollToBottom: FC = () => {
   );
 };
 
+const TABS = [
+  { id: "create", label: "Create", icon: SparklesIcon },
+  { id: "explore", label: "Explore", icon: NewspaperIcon },
+  { id: "code", label: "Code", icon: CodeXmlIcon },
+  { id: "learn", label: "Learn", icon: GraduationCapIcon },
+] as const;
+
+const TAB_SUGGESTIONS: Record<string, string[]> = {
+  create: [
+    "Write a short story about a robot discovering emotions",
+    "Help me outline a sci-fi novel set in a post-apocalyptic world",
+    "Create a character profile for a complex villain with sympathetic motives",
+    "Give me 5 creative writing prompts for flash fiction",
+  ],
+  explore: [
+    "Good books for fans of Rick Rubin",
+    "Countries ranked by number of corgis",
+    "Most successful companies in the world",
+    "How much does Claude cost?",
+  ],
+  code: [
+    "Write code to invert a binary search tree in Python",
+    "What's the difference between Promise.all and Promise.allSettled?",
+    "Explain React's useEffect cleanup function",
+    "Best practices for error handling in async/await",
+  ],
+  learn: [
+    "Beginner's guide to TypeScript",
+    "Explain the CAP theorem in distributed systems",
+    "Why is AI so expensive?",
+    "Are black holes real?",
+  ],
+};
+
+const DEFAULT_SUGGESTIONS = [
+  "How does AI work?",
+  "Are black holes real?",
+  'How many Rs are in the word "strawberry"?',
+  "What is the meaning of life?",
+];
+
 const ThreadWelcome: FC = () => {
+  const [selected, setSelected] = useState<string | null>(null);
+  const aui = useAui();
+  const suggestions = selected ? (TAB_SUGGESTIONS[selected] ?? DEFAULT_SUGGESTIONS) : DEFAULT_SUGGESTIONS;
+
+  const handleSelect = (text: string) => {
+    try {
+      const c = (aui as unknown as { composer: { setText: (t: string) => void; send: () => void } }).composer;
+      if (c?.setText) {
+        c.setText(text);
+        setTimeout(() => c.send(), 0);
+        return;
+      }
+    } catch {}
+    try {
+      const tc = (aui as unknown as { thread: { composer: { setText: (t: string) => void; send: () => void } } }).thread.composer;
+      if (tc?.setText) {
+        tc.setText(text);
+        setTimeout(() => tc.send(), 0);
+      }
+    } catch {}
+  };
+
   return (
-    <div className="aui-thread-welcome-root mb-6 flex flex-col items-center px-4 text-center">
-      <h1 className="aui-thread-welcome-message-inner fade-in slide-in-from-bottom-1 animate-in fill-mode-both text-2xl font-medium tracking-tight duration-200">
-        How can I help you today?
+    <div className="aui-thread-welcome-root flex w-full max-w-[560px] flex-col px-2 text-left">
+      <h1 className="aui-thread-welcome-message-inner fade-in slide-in-from-bottom-1 animate-in fill-mode-both text-2xl font-semibold tracking-tight duration-200">
+        How can I help you?
       </h1>
+      <div className="mt-5 flex flex-wrap gap-2">
+        {TABS.map((tab) => {
+          const isActive = selected === tab.id;
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setSelected(isActive ? null : tab.id)}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors",
+                isActive
+                  ? "border-pink-900/40 bg-[#4a1a2e] text-pink-200"
+                  : "border-zinc-800 bg-zinc-800/40 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200",
+              )}
+            >
+              <Icon className="size-3.5" />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-6 flex flex-col">
+        {suggestions.map((text) => (
+          <button
+            key={text}
+            type="button"
+            onClick={() => handleSelect(text)}
+            className="border-b border-zinc-800/60 px-2 py-3 text-left text-[13.5px] leading-5 text-zinc-300 last:border-0 hover:bg-zinc-800/40 hover:text-zinc-100 rounded-lg -mx-2 px-3 transition-colors"
+          >
+            {text}
+          </button>
+        ))}
+      </div>
     </div>
   );
 };
 
 const ThreadSuggestions: FC = () => {
-  return (
-    <div className="aui-thread-welcome-suggestions flex w-full flex-wrap items-center justify-center gap-2 px-4">
-      <ThreadPrimitive.Suggestions>
-        {() => <ThreadSuggestionItem />}
-      </ThreadPrimitive.Suggestions>
-    </div>
-  );
+  return null;
 };
 
 const ThreadSuggestionItem: FC = () => {
-  return (
-    <div className="aui-thread-welcome-suggestion-display fade-in slide-in-from-bottom-2 animate-in fill-mode-both duration-200">
-      <SuggestionPrimitive.Trigger
-        send
-        render={
-          <Button
-            variant="ghost"
-            className="aui-thread-welcome-suggestion text-foreground hover:bg-muted border-border/60 h-auto gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-normal whitespace-nowrap transition-colors"
-          />
-        }
-      >
-        <SuggestionPrimitive.Title className="aui-thread-welcome-suggestion-text-1" />
-        <SuggestionPrimitive.Description className="aui-thread-welcome-suggestion-text-2 empty:hidden" />
-      </SuggestionPrimitive.Trigger>
-    </div>
-  );
+  return null;
 };
 
 const Composer: FC<{ autoFocus: boolean }> = ({ autoFocus }) => {

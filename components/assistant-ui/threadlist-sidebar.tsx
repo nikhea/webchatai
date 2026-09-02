@@ -11,22 +11,22 @@ import {
   KeyRoundIcon,
   LayoutGridIcon,
   LogOutIcon,
-  MessagesSquare,
+  PanelLeftIcon,
   PlusIcon,
   SearchIcon,
   SettingsIcon,
+  SquarePenIcon,
 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { ThreadList } from "@/components/assistant-ui/thread-list";
+import { useAui } from "@assistant-ui/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,27 +41,39 @@ export function ThreadListSidebar({
   onSearchOpen,
   ...props
 }: React.ComponentProps<typeof Sidebar> & { onSearchOpen?: () => void }) {
+  const { toggleSidebar } = useSidebar();
+  const aui = useAui();
+
   return (
     <Sidebar {...props}>
-      <SidebarHeader className="aui-sidebar-header mb-2 border-b">
-        <div className="aui-sidebar-header-content flex items-center justify-between">
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                size="lg"
-                render={
-                  <a href="https://assistant-ui.com" target="_blank" rel="noopener noreferrer" />
-                }
-              >
-                <div className="aui-sidebar-header-icon-wrapper bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <MessagesSquare className="aui-sidebar-header-icon size-4" />
-                </div>
-                <div className="aui-sidebar-header-heading me-6 flex flex-col gap-0.5 leading-none">
-                  <span className="aui-sidebar-header-title font-semibold">assistant-ui</span>
-                </div>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
+      <SidebarHeader className="aui-sidebar-header mb-2 border-b-0 p-2">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between px-1 pt-1">
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              aria-label="Collapse sidebar"
+              className="grid size-7 place-items-center rounded-md text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            >
+              <PanelLeftIcon className="size-4" />
+            </button>
+            <span className="text-pink-300/90 text-[22px] font-semibold tracking-tight">T3.chat</span>
+            <button
+              type="button"
+              aria-label="New chat"
+              onClick={() => (aui as unknown as { threads: { switchToNewThread: () => void } }).threads.switchToNewThread()}
+              className="grid size-7 place-items-center rounded-md text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            >
+              <SquarePenIcon className="size-4" />
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => (aui as unknown as { threads: { switchToNewThread: () => void } }).threads.switchToNewThread()}
+            className="flex w-full items-center justify-center rounded-xl border border-pink-900/30 bg-[#3a0a2a]/60 px-4 py-2.5 text-sm font-medium text-pink-200/90 hover:bg-[#4a0f35]/70 hover:text-pink-100 transition-colors"
+          >
+            New Chat
+          </button>
         </div>
       </SidebarHeader>
       <SidebarContent className="aui-sidebar-content px-2">

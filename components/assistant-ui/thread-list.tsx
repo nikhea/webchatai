@@ -41,7 +41,6 @@ import { useHoverPrefetchThread } from "@/hooks/use-hover-prefetch-thread";
 export const ThreadList: FC = () => {
   return (
     <ThreadListRoot>
-      <ThreadListNew />
       <ThreadListItems />
     </ThreadListRoot>
   );
