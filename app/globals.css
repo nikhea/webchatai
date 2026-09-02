@@ -364,11 +364,23 @@
   }
 } */
 
-[data-streamdown="code-block-actions"] {
+[data-streamdown="code-block-actions"],
+[data-streamdown="mermaid-block-actions"],
+[data-streamdown="table-wrapper"] [data-streamdown="table-actions"] {
   opacity: 1 !important;
   pointer-events: auto !important;
+  visibility: visible !important;
 }
 [data-streamdown="code-block"] [data-streamdown="code-block-copy-button"],
-[data-streamdown="code-block"] [data-streamdown="code-block-download-button"] {
+[data-streamdown="code-block"] [data-streamdown="code-block-download-button"],
+[data-streamdown="code-block-actions"] button,
+[data-streamdown="mermaid-block-actions"] button,
+[data-streamdown="table-wrapper"] button {
   opacity: 1 !important;
+  visibility: visible !important;
+  display: inline-flex !important;
+}
+[data-streamdown="code-block"],
+[data-streamdown="mermaid-block"] {
+  position: relative;
 }

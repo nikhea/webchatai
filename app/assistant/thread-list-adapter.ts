@@ -97,18 +97,49 @@ export function createMastraThreadListAdapter(
       const key = memoryKeys.threads(resourceId, AGENT_ID);
       const mapRows = (rows: any) => {
         const arr = Array.isArray(rows) ? rows : ((rows as any)?.threads ?? []);
+        const mapped = arr.map((t: any) => ({
+          remoteId: t.id,
+          status: t.metadata?.archived ? "archived" : "regular",
+          title: t.title ?? undefined,
+          lastMessageAt: t.updatedAt
+            ? new Date(t.updatedAt)
+            : t.createdAt
+              ? new Date(t.createdAt)
+              : undefined,
+          rawCreatedAt: t.createdAt ? new Date(t.createdAt).getTime() : 0,
+          custom: t.metadata?.pinned ? { pinned: true } : undefined,
+        }));
+        mapped.sort((a: any, b: any) => (b.lastMessageAt?.getTime() ?? 0) - (a.lastMessageAt?.getTime() ?? 0));
+        const seen = new Map<string, (typeof mapped)[number]>();
+        const deduped: typeof mapped = [];
+        const duplicates: string[] = [];
+        for (const th of mapped) {
+          const keyTitle = (th.title ?? "").trim().toLowerCase();
+          if (!seen.has(keyTitle)) {
+            seen.set(keyTitle, th);
+            deduped.push(th);
+          } else {
+            const existing = seen.get(keyTitle)!;
+            const isNewer = (th.lastMessageAt?.getTime() ?? th.rawCreatedAt) > (existing.lastMessageAt?.getTime() ?? (existing as any).rawCreatedAt);
+            if (isNewer) {
+              const idx = deduped.indexOf(existing);
+              if (idx !== -1) deduped.splice(idx, 1);
+              seen.set(keyTitle, th);
+              deduped.push(th);
+              duplicates.push(existing.remoteId);
+            } else {
+              duplicates.push(th.remoteId);
+            }
+          }
+        }
+        if (duplicates.length) {
+          for (const dupId of duplicates) {
+            deleteThread(AGENT_ID, dupId).catch(() => {});
+          }
+          queryClient.invalidateQueries({ queryKey: key }).catch(() => {});
+        }
         return {
-          threads: arr.map((t: any) => ({
-            remoteId: t.id,
-            status: t.metadata?.archived ? "archived" : "regular",
-            title: t.title ?? undefined,
-            lastMessageAt: t.updatedAt
-              ? new Date(t.updatedAt)
-              : t.createdAt
-                ? new Date(t.createdAt)
-                : undefined,
-            custom: t.metadata?.pinned ? { pinned: true } : undefined,
-          })),
+          threads: deduped.map(({ rawCreatedAt: _rc, ...rest }: any) => rest),
         };
       };
 
@@ -138,12 +169,17 @@ export function createMastraThreadListAdapter(
           } catch {}
           return { remoteId: pending as string };
         }
+        return { remoteId: _threadId as string };
+      }
+      if (!_threadId) {
+        const localId = `__LOCALID_${crypto.randomUUID()}`;
+        return { remoteId: localId };
       }
       const t = await createThread(
         resourceId,
         AGENT_ID,
         "New Conversation",
-        isLocalId ? undefined : (_threadId ?? undefined),
+        _threadId,
       );
       await queryClient.invalidateQueries({
         queryKey: memoryKeys.threads(resourceId, AGENT_ID),

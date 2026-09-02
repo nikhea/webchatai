@@ -60,7 +60,7 @@ export const StaticMarkdown = memo(({ text }: { text: string }) => (
     mode="static"
     plugins={{ code, math, mermaid, cjk }}
     shikiTheme={["github-light", "github-dark"]}
-    controls={false}
+    controls={true}
   >
     {balanceFences(text)}
   </Streamdown>
