@@ -10,12 +10,19 @@ import "katex/dist/katex.min.css";
 import "streamdown/styles.css";
 import { memo } from "react";
 
+const balanceFences = (text: string) => {
+  const fences = text.match(/```/g);
+  if (!fences || fences.length % 2 === 0) return text;
+  return `${text}\n\`\`\``;
+};
+
 export const MarkdownText = memo(() => (
   <StreamdownTextPrimitive
     plugins={{ code, math, mermaid, cjk }}
     shikiTheme={["github-light", "github-dark"]}
     caret="block"
-    controls
+    controls={true}
+    preprocess={balanceFences}
     mermaid={{
       config: { theme: "neutral" },
       errorComponent: ({ error, chart, retry }) => (
@@ -55,7 +62,7 @@ export const StaticMarkdown = memo(({ text }: { text: string }) => (
     shikiTheme={["github-light", "github-dark"]}
     controls={false}
   >
-    {text}
+    {balanceFences(text)}
   </Streamdown>
 ));
 StaticMarkdown.displayName = "StaticMarkdown";

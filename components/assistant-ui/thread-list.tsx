@@ -16,6 +16,7 @@ import { memoryKeys } from "@/app/queries/memory.query";
 import { AGENT_ID, pinThread, RESOURCE_ID_KEY, unpinThread } from "@/lib/mastra/memory-queries";
 import {
   ArchiveIcon,
+  GitBranchIcon,
   Loader2Icon,
   MoreHorizontalIcon,
   PencilIcon,
@@ -290,6 +291,8 @@ const ThreadListSkeleton: FC = () => {
 export const ThreadListItem: FC = () => {
   const isRunning = useAuiState((s) => s.threadListItem.isRunning);
   const isPinned = useAuiState((s) => !!(s.threadListItem.custom as any)?.pinned);
+  const title = useAuiState((s) => (s.threadListItem as unknown as { title?: string }).title ?? "");
+  const isBranched = title.endsWith(" (clone)");
   const thread = useAuiState((s) => s.threadListItem as any);
   const { onMouseEnter, onMouseLeave } = useHoverPrefetchThread(thread.remoteId ?? thread.id);
   const [isRenaming, setIsRenaming] = useState(false);
@@ -322,6 +325,12 @@ export const ThreadListItem: FC = () => {
           data-slot="aui_thread-list-item-trigger"
           className="focus-visible:ring-ring/50 flex h-full min-w-0 flex-1 items-center rounded-md px-2.5 text-start text-sm outline-none group-hover:pe-9 group-has-focus-visible:pe-9 group-has-data-[state=open]:pe-9 group-data-active:pe-9 focus-visible:ring-1"
         >
+          {isBranched && (
+            <GitBranchIcon
+              data-slot="aui_thread-list-item-branched"
+              className="text-muted-foreground me-1.5 size-3.5 shrink-0"
+            />
+          )}
           {isPinned && (
             <PinIcon
               data-slot="aui_thread-list-item-pinned"

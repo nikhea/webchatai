@@ -223,6 +223,38 @@ export async function cloneThread(
   });
 }
 
+export async function branchThreadAtMessage(
+  agentId: string,
+  threadId: string,
+  messageId: string,
+) {
+  const original = await fetchThread(agentId, threadId);
+  const baseTitle = (original as unknown as { title?: string }).title ?? "New Conversation";
+  const cloneTitle = baseTitle.endsWith(" (clone)") ? baseTitle : `${baseTitle} (clone)`;
+
+  const { thread: clonedThread } = await cloneThread(agentId, threadId, {
+    title: cloneTitle,
+  });
+
+  const newThreadId = (clonedThread as unknown as { id: string }).id;
+  try {
+    const res: unknown = await listMessages(agentId, newThreadId, { page: 0, perPage: 200 });
+    const rows: unknown[] = (res as { messages?: unknown[] })?.messages ?? (Array.isArray(res) ? (res as unknown[]) : []);
+    const sorted = [...(rows as { id: string; createdAt?: string | number | Date }[])].sort(
+      (a, b) => new Date(a.createdAt as string).getTime() - new Date(b.createdAt as string).getTime(),
+    );
+    const branchIdx = sorted.findIndex((m) => m.id === messageId);
+    if (branchIdx !== -1 && branchIdx < sorted.length - 1) {
+      const toDelete = sorted.slice(branchIdx + 1).map((m) => m.id);
+      if (toDelete.length) {
+        await deleteMessages(agentId, newThreadId, toDelete);
+      }
+    }
+  } catch {}
+
+  return clonedThread;
+}
+
 /**
  * List messages in thread
  */

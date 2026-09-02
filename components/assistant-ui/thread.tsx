@@ -76,6 +76,7 @@ import {
   CpuIcon,
   DatabaseIcon,
   DownloadIcon,
+  GitBranchIcon,
   GraduationCapIcon,
   MicIcon,
   MoreHorizontalIcon,
@@ -85,6 +86,7 @@ import {
   SettingsIcon,
   SparklesIcon,
   SquareIcon,
+  SquarePenIcon,
   StopCircleIcon,
   UserIcon,
   ZapIcon,
@@ -99,6 +101,7 @@ import {
   type FC,
   type PropsWithChildren,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export type ThreadGroupPart = MessagePrimitive.GroupedParts.GroupPart;
 
@@ -231,11 +234,11 @@ const ThreadRoot: FC<{ isEmpty: boolean; autoFocus: boolean }> = ({
 }) => {
   const { Welcome = ThreadWelcome } = useContext(ThreadComponentsContext);
 
-  return (
+    return (
     <ThreadPrimitive.Root
       className="aui-root aui-thread-root bg-background @container flex h-full flex-col"
       style={{
-        ["--thread-max-width" as string]: "44rem",
+        ["--thread-max-width" as string]: "56rem",
         ["--composer-bg" as string]: "var(--color-card)",
         ["--composer-radius" as string]: "1.5rem",
         ["--composer-padding" as string]: "8px",
@@ -806,7 +809,7 @@ const AssistantMessage: FC = () => {
               <span className="text-muted-foreground mb-1 ml-1 text-xs font-medium">
                 Assistant
               </span>
-              <div className="bg-card text-foreground rounded-2xl rounded-tl-md border px-4 py-3 leading-relaxed wrap-break-word shadow-sm">
+              <div className="text-foreground leading-relaxed wrap-break-word">
                 {restText ? (
                   <InlineMarkdown text={restText} />
                 ) : (
@@ -939,7 +942,7 @@ const AssistantMessage: FC = () => {
         </span>
         <div
           data-slot="aui_assistant-message-content"
-          className="bg-card text-foreground rounded-2xl rounded-tl-md border px-4 py-3 leading-relaxed wrap-break-word shadow-sm"
+          className="text-foreground leading-relaxed wrap-break-word"
         >
           <MessagePrimitive.GroupedParts
             groupBy={groupPartByType({
@@ -1155,6 +1158,44 @@ const AssistantTokens: FC = () => {
   );
 };
 
+const BranchButton: FC = () => {
+  const [busy, setBusy] = useState(false);
+  const aui = useAui();
+  const queryClient = useQueryClient();
+  const message = useAuiState((s) => (s.message as unknown as { id?: string }) ?? ({} as { id?: string }));
+  const threadId = useAuiState((s) => {
+    const t = (s as unknown as { thread?: { remoteId?: string; id?: string }; threads?: { mainThreadId?: string } }).thread;
+    const th = (s as unknown as { threads?: { mainThreadId?: string } }).threads;
+    return t?.remoteId ?? t?.id ?? th?.mainThreadId ?? (s as unknown as { message?: { threadId?: string } }).message?.threadId;
+  });
+  const handleBranch = async () => {
+    if (busy || !threadId || !message?.id) return;
+    setBusy(true);
+    try {
+      const { AGENT_ID, branchThreadAtMessage } = await import("@/lib/mastra/memory-queries");
+      const { memoryKeys } = await import("@/app/queries/memory.query");
+      const { RESOURCE_ID_KEY } = await import("@/lib/mastra/memory-queries");
+      const cloned = await branchThreadAtMessage(AGENT_ID, threadId as string, message.id as string);
+      const newId = (cloned as unknown as { id: string }).id;
+      await queryClient.invalidateQueries({ queryKey: memoryKeys.threads(RESOURCE_ID_KEY, AGENT_ID) });
+      try {
+        (aui as unknown as { threads: { switchToThread: (id: string) => void } }).threads?.switchToThread?.(newId);
+      } catch {}
+      window.history.pushState(null, "", `/chat/${newId}`);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    } catch (e) {
+      console.error("branch failed", e);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <TooltipIconButton tooltip="Branch" onClick={handleBranch} aria-disabled={busy} className={busy ? "opacity-50" : ""}>
+      <GitBranchIcon className="size-4" />
+    </TooltipIconButton>
+  );
+};
+
 const AssistantActionBar: FC = () => {
   return (
     <ActionBarPrimitive.Root
@@ -1162,6 +1203,7 @@ const AssistantActionBar: FC = () => {
       autohide="never"
       className="aui-assistant-action-bar-root text-muted-foreground col-start-3 row-start-2 -ms-1 flex gap-1"
     >
+      <BranchButton />
       <ActionBarPrimitive.Copy render={<TooltipIconButton tooltip="Copy" />}>
         <AuiIf condition={(s) => s.message.isCopied}>
           <CheckIcon className="animate-in zoom-in-50 fade-in duration-200 ease-out" />
@@ -1234,29 +1276,47 @@ const UserImagePart: ImageMessagePartComponent = (part) => (
   </div>
 );
 
+const UserMarkdownText: FC<TextMessagePartProps> = (props) => {
+  if (/@[A-Za-z0-9_]+/.test(props.text)) return <DirectiveText {...props} />;
+  return <MarkdownText />;
+};
+
 const UserMessage: FC = () => {
+  const isLastUser = useAuiState((s) => {
+    const msgs = (s as unknown as { thread: { messages: { role: string; id?: string }[] } }).thread.messages;
+    const cur = (s as unknown as { message: { id?: string; role: string } }).message;
+    const userMsgs = msgs.filter((m) => m.role === "user");
+    if (!userMsgs.length) return false;
+    const last = userMsgs[userMsgs.length - 1];
+    if (cur?.id && last?.id) return cur.id === last.id;
+    const curIdx = msgs.findIndex((m) => (m as { id?: string }).id === cur?.id);
+    const lastIdx = msgs.findIndex((m) => (m as { id?: string }).id === last?.id);
+    if (curIdx !== -1 && lastIdx !== -1) return curIdx === lastIdx;
+    return msgs[msgs.length - 1] === (cur as unknown);
+  });
+
   return (
     <MessagePrimitive.Root
       data-slot="aui_user-message-root"
       className="fade-in slide-in-from-bottom-1 animate-in flex justify-end gap-3 duration-150 [contain-intrinsic-size:auto_200px] [content-visibility:auto]"
       data-role="user"
     >
-      <div className="flex max-w-[75%] flex-col items-end">
+      <div className="group/user-message flex max-w-[85%] flex-col items-end">
         <span className="text-muted-foreground mb-1 mr-1 text-xs font-medium">
           You
         </span>
-        <div className="aui-user-message-content-wrapper relative min-w-0">
-          <div className="aui-user-message-content bg-primary text-primary-foreground peer rounded-2xl rounded-br-md px-4 py-2.5 wrap-break-word shadow-sm empty:hidden">
+        <div className="aui-user-message-content-wrapper relative w-full min-w-0">
+          <div className="aui-user-message-content bg-card text-card-foreground rounded-xl border border-border/40 px-5 py-4 leading-relaxed wrap-break-word empty:hidden">
             <MessagePrimitive.Quote>
               {(quote) => <QuoteBlock {...quote} />}
             </MessagePrimitive.Quote>
             <MessagePrimitive.Parts
-              components={{ Text: DirectiveText, File: UserFilePart, Image: UserImagePart }}
+              components={{ Text: UserMarkdownText as unknown as FC<TextMessagePartProps>, File: UserFilePart, Image: UserImagePart }}
             />
           </div>
-          <div className="aui-user-action-bar-wrapper absolute start-0 top-1/2 -translate-x-full -translate-y-1/2 pe-2 peer-empty:hidden rtl:translate-x-full">
-            <UserActionBar />
-          </div>
+        </div>
+        <div className="flex w-full justify-end gap-1 pt-1.5 opacity-0 transition-opacity duration-200 group-hover/user-message:opacity-100 focus-within:opacity-100 has-[button:focus-visible]:opacity-100">
+          <UserMessageBottomBar isLastUser={isLastUser} />
         </div>
         <BranchPicker
           data-slot="aui_user-branch-picker"
@@ -1271,12 +1331,37 @@ const UserMessage: FC = () => {
   );
 };
 
+const UserMessageBottomBar: FC<{ isLastUser: boolean }> = ({ isLastUser }) => {
+  return (
+    <ActionBarPrimitive.Root
+      hideWhenRunning
+      autohide="never"
+      className="aui-user-action-bar-root text-muted-foreground flex gap-1"
+    >
+      <BranchButton />
+      <ActionBarPrimitive.Copy render={<TooltipIconButton tooltip="Copy" />}>
+        <AuiIf condition={(s) => s.message.isCopied}>
+          <CheckIcon className="animate-in zoom-in-50 fade-in duration-200" />
+        </AuiIf>
+        <AuiIf condition={(s) => !s.message.isCopied}>
+          <CopyIcon className="animate-in zoom-in-75 fade-in duration-150" />
+        </AuiIf>
+      </ActionBarPrimitive.Copy>
+      {isLastUser && (
+        <ActionBarPrimitive.Edit render={<TooltipIconButton tooltip="Edit" />}>
+          <SquarePenIcon className="size-4" />
+        </ActionBarPrimitive.Edit>
+      )}
+    </ActionBarPrimitive.Root>
+  );
+};
+
 const UserActionBar: FC = () => {
   return (
     <ActionBarPrimitive.Root
       hideWhenRunning
       autohide="not-last"
-      className="aui-user-action-bar-root flex flex-col items-end"
+      className="aui-user-action-bar-root hidden"
     >
       <ActionBarPrimitive.Edit
         render={
