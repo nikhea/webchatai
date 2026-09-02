@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/mode-toggle";
 import { ThreadListSidebar } from "@/components/assistant-ui/threadlist-sidebar";
+import { ThreadSearchDialog } from "@/components/assistant-ui/thread-search-dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createMastraThreadListAdapter } from "./assistant/thread-list-adapter";
@@ -37,6 +38,7 @@ export const Assistant = ({
     : initialThreadId;
   const queryClient = useQueryClient();
   const [currentThreadId, setCurrentThreadId] = useState(normalizedInitialId);
+  const [searchOpen, setSearchOpen] = useState(false);
   const currentThreadIdRef = useRef(currentThreadId);
 
   useEffect(() => {
@@ -162,8 +164,8 @@ export const Assistant = ({
     <AssistantRuntimeProvider runtime={runtime} config={config}>
       <SidebarProvider>
         <div className="flex h-dvh w-full pr-0.5">
-          <ThreadListSidebar />
-          <SidebarInset>
+          <ThreadListSidebar onSearchOpen={() => setSearchOpen(true)} />
+          <SidebarInset className="relative">
             <header className="flex h-16 shrink-0 items-center gap-2  px-4">
               <SidebarTrigger />
               <div className="ml-auto">
@@ -173,6 +175,7 @@ export const Assistant = ({
             <div className="flex-1 overflow-hidden">
               <Thread />
             </div>
+            <ThreadSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
           </SidebarInset>
         </div>
       </SidebarProvider>

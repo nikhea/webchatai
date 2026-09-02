@@ -39,14 +39,10 @@ import {
 import { useHoverPrefetchThread } from "@/hooks/use-hover-prefetch-thread";
 
 export const ThreadList: FC = () => {
-  const [search, setSearch] = useState("");
-  const hasThreads = useAuiState((s) => s.threads.threadIds.length > 0);
-
   return (
     <ThreadListRoot>
       <ThreadListNew />
-      {hasThreads && <ThreadListSearch value={search} onValueChange={setSearch} />}
-      <ThreadListItems searchQuery={hasThreads ? search : ""} />
+      <ThreadListItems />
     </ThreadListRoot>
   );
 };
