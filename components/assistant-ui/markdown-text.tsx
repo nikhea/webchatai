@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  StreamdownTextPrimitive,
-  useIsStreamdownCodeBlock,
-  useStreamdownPreProps,
-} from "@assistant-ui/react-streamdown";
+import { StreamdownTextPrimitive } from "@assistant-ui/react-streamdown";
 import { code } from "@streamdown/code";
 import { math } from "@streamdown/math";
 import { mermaid } from "@streamdown/mermaid";
@@ -13,26 +9,6 @@ import { Streamdown } from "streamdown";
 import "katex/dist/katex.min.css";
 import "streamdown/styles.css";
 import { memo } from "react";
-
-function CustomCode({ children, ...props }: React.ComponentProps<"code">) {
-  const isBlock = useIsStreamdownCodeBlock();
-  const preProps = useStreamdownPreProps();
-  if (!isBlock) {
-    return (
-      <code
-        className="bg-muted rounded-md px-1.5 py-0.5 font-mono text-[0.85em]"
-        {...props}
-      >
-        {children}
-      </code>
-    );
-  }
-  return (
-    <code className={preProps?.className} {...props}>
-      {children}
-    </code>
-  );
-}
 
 export const MarkdownText = memo(() => (
   <StreamdownTextPrimitive
@@ -67,9 +43,6 @@ export const MarkdownText = memo(() => (
       strikethrough: true,
       katex: true,
       setextHeadings: true,
-    }}
-    components={{
-      code: CustomCode as never,
     }}
   />
 ));
