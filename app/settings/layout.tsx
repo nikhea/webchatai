@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowLeftIcon, MoonIcon } from "lucide-react";
+import { ArrowLeftIcon } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SettingsNav } from "@/components/settings-nav";
+import { ModeToggle } from "@/components/mode-toggle";
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -15,9 +16,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
             Back to Chat
           </Link>
           <div className="flex items-center gap-4">
-            <button aria-label="Toggle theme" className="grid size-8 place-items-center text-zinc-200">
-              <MoonIcon className="size-4 stroke-[2.5]" />
-            </button>
+            <ModeToggle />
             <button className="text-sm font-semibold text-zinc-200 hover:text-white">Sign out</button>
           </div>
         </header>

@@ -23,8 +23,8 @@ import {
 
 export const memoryKeys = {
   status: (agentId: string) => ["memory", "status", agentId] as const,
-  threads: (resourceId: string, agentId?: string) =>
-    ["memory", "threads", resourceId, agentId] as const,
+  threads: (resourceId: string, agentId?: string, page?: number, perPage?: number) =>
+    ["memory", "threads", resourceId, agentId ?? "", page ?? 0, perPage ?? 10] as const,
   thread: (threadId: string, agentId?: string) =>
     ["memory", "thread", threadId, agentId] as const,
   messages: (
@@ -62,14 +62,16 @@ export function useThreads(
   agentId?: string,
   options?: { page?: number; perPage?: number },
 ) {
+  const page = options?.page ?? 0;
+  const perPage = options?.perPage ?? 10;
   return useQuery({
-    queryKey: memoryKeys.threads(resourceId, agentId),
-    queryFn: () => listThreads(resourceId, agentId, { perPage: 100 }),
+    queryKey: memoryKeys.threads(resourceId, agentId, page, perPage),
+    queryFn: () => listThreads(resourceId, agentId, { page, perPage }),
     enabled: Boolean(resourceId),
     staleTime: 30_000,
     gcTime: 1000 * 60 * 60 * 24,
     refetchOnWindowFocus: false,
-    // persister: queryPersister.persisterFn,
+    placeholderData: (prev) => prev,
   });
 }
 

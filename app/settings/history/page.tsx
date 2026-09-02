@@ -5,7 +5,6 @@ import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
-  getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import {
@@ -26,6 +25,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useThreads } from "@/app/queries/memory.query";
+import { AGENT_ID, RESOURCE_ID_KEY } from "@/lib/mastra/memory-queries";
 
 type Chat = {
   id: string;
@@ -45,28 +46,54 @@ type Shared = {
   expanded?: boolean;
 };
 
-const chatData: Chat[] = [
-  { id: "1", title: "Talent Filter Not Working Despite Matching Role and No Match Result Entry", profile: "Default", date: "12 months ago", pinned: true },
-  { id: "2", title: "Okay, I understand. I will act as a web research assistant, use the appropriate", profile: "Default", date: "about 9 hours ago" },
-  { id: "3", title: "Homz System: Feature Expansion Proposal", profile: "Default", date: "5 months ago" },
-  { id: "4", title: "New Thread", profile: "Default", date: "5 months ago" },
-  { id: "5", title: "Okay, I understand. I will act as a web research assistant, use the appropriate", profile: "Default", date: "6 months ago" },
-  { id: "6", title: "Feature Native Scheduler & Agentic Cron System", profile: "Default", date: "6 months ago" },
-  { id: "7", title: "Mastra AI Summary", profile: "Default", date: "about 1 year ago" },
-  { id: "8", title: "Mastra Changelog 2026-02-13: Datasets, Experiments, Workspace, and Workflow Im...", profile: "Default", date: "7 months ago" },
-  { id: "9", title: "Meaning of Life", profile: "Default", date: "9 months ago" },
-  { id: "10", title: "Black Holes Reality Inquiry", profile: "Default", date: "9 months ago" },
-];
-
 const sharedInitial: Shared[] = [
   { id: "s1", title: "Talent Filter Not Working Despite Matching Role and No Ma...", link: "https://t3.chat/share/85h70dvcvj", forks: 0, views: 1, date: "about 5 hours ago", expanded: true },
   { id: "s2", title: "Mastra AI Summary", link: "https://t3.chat/share/5gdvjzhr1i", forks: 0, views: 0, date: "3 months ago", expanded: true },
   { id: "s3", title: "Meaning of Life", forks: 0, views: 0, date: "", expanded: false },
 ];
 
+function formatDate(d?: string) {
+  if (!d) return "";
+  const date = new Date(d);
+  if (Number.isNaN(date.getTime())) return String(d);
+  const diff = Date.now() - date.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} mins ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `about ${hrs} hours ago`;
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return "yesterday";
+  if (days < 30) return `${days} days ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} months ago`;
+  return `${Math.floor(months / 12)} years ago`;
+}
+
 export default function HistoryPage() {
   const [rowSelection, setRowSelection] = React.useState({});
   const [shared, setShared] = React.useState<Shared[]>(sharedInitial);
+  const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 10 });
+
+  const { data, isLoading, isFetching, isError } = useThreads(RESOURCE_ID_KEY, AGENT_ID, {
+    page: pagination.pageIndex,
+    perPage: pagination.pageSize,
+  });
+
+  const threadsRaw: any = data as any;
+  const rows: Chat[] = React.useMemo(() => {
+    const list: any[] = Array.isArray(threadsRaw) ? threadsRaw : threadsRaw?.threads ?? threadsRaw?.data ?? threadsRaw?.items ?? [];
+    return list.map((t: any) => ({
+      id: t.id ?? t.threadId ?? t.thread_id ?? Math.random().toString(36).slice(2),
+      title: t.title ?? "New Thread",
+      profile: "Default",
+      date: formatDate(t.updatedAt ?? t.createdAt ?? t.created_at),
+      pinned: !!(t.metadata?.pinned ?? t.pinned),
+    }));
+  }, [threadsRaw]);
+
+  const hasNextPage = rows.length >= pagination.pageSize;
+  const hasPrevPage = pagination.pageIndex > 0;
 
   const columns: ColumnDef<Chat>[] = [
     {
@@ -108,13 +135,14 @@ export default function HistoryPage() {
   ];
 
   const table = useReactTable({
-    data: chatData,
+    data: rows,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    manualPagination: true,
+    pageCount: -1,
+    state: { rowSelection, pagination },
     onRowSelectionChange: setRowSelection,
-    state: { rowSelection },
-    initialState: { pagination: { pageSize: 10 } },
+    onPaginationChange: setPagination,
   });
 
   const toggleShared = (id: string) => setShared((s) => s.map((x) => (x.id === id ? { ...x, expanded: !x.expanded } : x)));
@@ -153,16 +181,29 @@ export default function HistoryPage() {
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"} className="border-zinc-800 bg-[#0b080b] hover:bg-zinc-900/60 data-[state=selected]:bg-zinc-900">
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="px-3 py-2.5">{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
-                  ))}
-                </TableRow>
-              ))}
+              {isLoading ? (
+                Array.from({ length: pagination.pageSize }).map((_, i) => (
+                  <TableRow key={i} className="border-zinc-800">
+                    <TableCell colSpan={4} className="px-3 py-3"><div className="h-4 w-full animate-pulse rounded bg-zinc-800" /></TableCell>
+                  </TableRow>
+                ))
+              ) : isError ? (
+                <TableRow className="border-zinc-800"><TableCell colSpan={4} className="px-3 py-8 text-center text-sm text-zinc-500">Failed to load history</TableCell></TableRow>
+              ) : rows.length === 0 ? (
+                <TableRow className="border-zinc-800"><TableCell colSpan={4} className="px-3 py-8 text-center text-sm text-zinc-500">No conversations yet</TableCell></TableRow>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id} data-state={row.getIsSelected() && "selected"} className="border-zinc-800 bg-[#0b080b] hover:bg-zinc-900/60 data-[state=selected]:bg-zinc-900">
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="px-3 py-2.5">{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
+        {isFetching && !isLoading && <p className="text-xs text-zinc-500">Loading...</p>}
       </div>
 
       <div className="-mb-3 flex items-center gap-2 justify-between text-[rgb(249,248,251)]">
@@ -170,8 +211,9 @@ export default function HistoryPage() {
           <Archive className="size-3.5" /> Open Archive
         </Button>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="h-7 gap-1 border-zinc-800 bg-[#1a1219] px-2.5 text-xs text-zinc-500" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}><ChevronLeft className="size-3.5" /> Previous</Button>
-          <Button variant="outline" size="sm" className="h-7 gap-1 border-zinc-800 bg-[#1a1219] px-2.5 text-xs text-zinc-300" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>Next <ChevronRight className="size-3.5" /></Button>
+          <span className="text-xs text-zinc-500">Page {pagination.pageIndex + 1}</span>
+          <Button variant="outline" type="button" size="sm" className="h-7 gap-1 border-zinc-800 bg-[#1a1219] px-2.5 text-xs text-zinc-500 disabled:opacity-40" onClick={() => setPagination((p) => ({ ...p, pageIndex: Math.max(0, p.pageIndex - 1) }))} disabled={!hasPrevPage}><ChevronLeft className="size-3.5" /> Previous</Button>
+          <Button variant="outline" type="button" size="sm" className="h-7 gap-1 border-zinc-800 bg-[#1a1219] px-2.5 text-xs text-zinc-300 disabled:opacity-40" onClick={() => setPagination((p) => ({ ...p, pageIndex: p.pageIndex + 1 }))} disabled={isLoading || (!hasNextPage && rows.length === 0 && pagination.pageIndex > 0)}>Next <ChevronRight className="size-3.5" /></Button>
         </div>
       </div>
 
@@ -225,9 +267,6 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      <section className="mt-10 rounded-2xl border border-[color-mix(in_oklab,var(--destructive)_20%,transparent)] bg-[color-mix(in_oklab,var(--destructive)_4%,transparent)] p-4 text-[rgb(249,248,251)]">
-        <p className="text-xs text-[rgb(231,208,221)]">History is stored locally. Export regularly to avoid data loss.</p>
-      </section>
     </div>
   );
 }
