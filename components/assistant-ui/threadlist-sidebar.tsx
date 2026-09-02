@@ -107,16 +107,12 @@ export function ThreadListSidebar({
                 Ctrl <CommandIcon className="size-3" /> ,
               </span>
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <GlobeIcon />
-              Language
-            </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/settings/contact" />}>
               <HelpCircleIcon />
               Get help
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/settings/account" />}>
               <PlusIcon />
               Upgrade plan
             </DropdownMenuItem>
@@ -124,26 +120,19 @@ export function ThreadListSidebar({
               <DownloadIcon />
               Get apps and extensions
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <GraduationCapIcon />
-              <span className="flex-1">Claude Academy</span>
-              <span className="bg-blue-600 text-white rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none">
-                New
-              </span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/settings/shortcuts" />}>
               <InfoIcon />
               <span className="flex-1">Learn more</span>
               <ChevronRightIcon className="size-3.5 opacity-50" />
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/settings/api-keys" />}>
               <KeyRoundIcon />
               <div className="flex flex-1 flex-col leading-none">
-                <span>Get API keys</span>
-                <span className="text-muted-foreground text-xs">on Claude Platform</span>
+                <span>Manage API Keys</span>
+                <span className="text-muted-foreground text-xs">Create and manage keys</span>
               </div>
-              <ExternalLinkIcon className="size-3.5 opacity-60" />
+              <ChevronRightIcon className="size-3.5 opacity-60" />
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>

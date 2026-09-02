@@ -83,7 +83,7 @@ export default function AccountPage() {
         <section className="mt-[36px] flex flex-col gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-6 text-[16px] text-foreground outline-none ring-1 ring-destructive/10">
           <h2 className="text-xl font-bold text-[#f9f8fb]">Danger Zone</h2>
           <p className="text-[13px] leading-relaxed text-zinc-400">Permanently delete your account and all associated data.</p>
-          <button className="h-9 w-fit rounded-md bg-[oklab(0.444_0.15785_0.0800782_/_0.2)] px-4 py-2 text-sm font-bold text-white hover:bg-[oklab(0.5_0.16_0.08_/_0.25)]">Delete Account</button>
+          <button className="h-9 w-fit rounded-md bg-red-600 px-4 py-2 text-sm font-bold text-white opacity-100 hover:bg-red-700">Delete Account</button>
         </section>
       </div>
     </div>

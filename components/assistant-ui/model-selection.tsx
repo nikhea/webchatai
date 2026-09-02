@@ -89,9 +89,31 @@ export function ModelSelectionPopup({
   const [activeCaps, setActiveCaps] = useState<Set<string>>(new Set());
   const [showLegacy, setShowLegacy] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set(["Gemini 3 Flash", "Gemini 3.5 Flash-Lite", "Claude Opus 5"]));
+  const [visible, setVisible] = useState(12);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const markerRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const btnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const listRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(id);
+  }, [query]);
+  useEffect(() => setVisible(12), [debouncedQuery, active, activeCaps]);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    const root = listRef.current;
+    if (!el || !root) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) setVisible((v) => v + 12);
+      },
+      { root, rootMargin: "200px" }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [visible]);
 
   useEffect(() => {
     const btn = btnRefs.current[active];
@@ -107,14 +129,16 @@ export function ModelSelectionPopup({
 
   const visibleProviders = PROVIDERS.filter((p: any) => !(p as any).hidden);
   const data = MODEL_DATA[active];
-  const filtered = data
+  const allFiltered = data
     ? data.models.filter((m) => {
         if ((m as any).hidden) return false;
-        if (query && !m.name.toLowerCase().includes(query.toLowerCase())) return false;
+        if (debouncedQuery && !m.name.toLowerCase().includes(debouncedQuery.toLowerCase())) return false;
         if (activeCaps.size > 0 && !m.caps.some((c) => activeCaps.has(c))) return false;
         return true;
       })
     : [];
+  const filtered = allFiltered.slice(0, visible);
+  const hasMore = visible < allFiltered.length;
 
   return (
     <>
@@ -177,13 +201,13 @@ export function ModelSelectionPopup({
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 pt-4 pb-4 flex flex-col gap-5 custom-scrollbar">
+          <div ref={listRef} className="flex-1 overflow-y-auto px-6 pt-4 pb-4 flex flex-col gap-5 custom-scrollbar">
             {!data ? (
               <div className="flex flex-col items-center justify-center text-center gap-2 py-16 text-gray-500">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
                 <p className="text-sm">No models synced for {PROVIDERS.find((p) => p.id === active)?.label} yet.</p>
               </div>
-            ) : filtered.length === 0 ? (
+            ) : allFiltered.length === 0 ? (
               <div className="text-center text-gray-500 py-12 text-sm">No matches</div>
             ) : (
               filtered.map((m) => {
@@ -221,6 +245,8 @@ export function ModelSelectionPopup({
                 );
               })
             )}
+            {hasMore && <div ref={sentinelRef} className="h-1" />}
+            {!hasMore && allFiltered.length > 12 && <div className="py-2 text-center text-xs text-zinc-600">No more models</div>}
             {data && data.legacy.length > 0 && (
               <>
                 <div onClick={() => setShowLegacy((v) => !v)} className="mt-2 pt-4 border-t border-white/5 flex items-center justify-between cursor-pointer text-gray-400 hover:text-gray-200">

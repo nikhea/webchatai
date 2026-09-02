@@ -1,5 +1,6 @@
 import {
   useQuery,
+  useInfiniteQuery,
   useMutation,
   useQueryClient,
   skipToken,
@@ -23,8 +24,12 @@ import {
 
 export const memoryKeys = {
   status: (agentId: string) => ["memory", "status", agentId] as const,
-  threads: (resourceId: string, agentId?: string, page?: number, perPage?: number) =>
-    ["memory", "threads", resourceId, agentId ?? "", page ?? 0, perPage ?? 10] as const,
+  threads: (resourceId: string, agentId?: string, page?: number, perPage?: number, search?: string) =>
+    ["memory", "threads", resourceId, agentId ?? "", page ?? 0, perPage ?? 20, search ?? ""] as const,
+  threadsInfinite: (resourceId: string, agentId?: string, search?: string) =>
+    ["memory", "threads", "infinite", resourceId, agentId ?? "", search ?? ""] as const,
+  threadsSearch: (resourceId: string, agentId?: string, query?: string) =>
+    ["memory", "threads", "search", resourceId, agentId ?? "", query ?? ""] as const,
   thread: (threadId: string, agentId?: string) =>
     ["memory", "thread", threadId, agentId] as const,
   messages: (
@@ -60,18 +65,50 @@ export function useMemoryStatus(agentId: string | undefined) {
 export function useThreads(
   resourceId: string,
   agentId?: string,
-  options?: { page?: number; perPage?: number },
+  options?: { page?: number; perPage?: number; search?: string },
 ) {
   const page = options?.page ?? 0;
-  const perPage = options?.perPage ?? 10;
+  const perPage = options?.perPage ?? 20;
   return useQuery({
-    queryKey: memoryKeys.threads(resourceId, agentId, page, perPage),
-    queryFn: () => listThreads(resourceId, agentId, { page, perPage }),
+    queryKey: memoryKeys.threads(resourceId, agentId, page, perPage, options?.search),
+    queryFn: () => listThreads(resourceId, agentId, { page, perPage, search: options?.search }),
     enabled: Boolean(resourceId),
     staleTime: 30_000,
     gcTime: 1000 * 60 * 60 * 24,
     refetchOnWindowFocus: false,
     placeholderData: (prev) => prev,
+  });
+}
+
+export function useInfiniteThreads(resourceId: string, agentId?: string, search?: string, perPage = 20) {
+  return useInfiniteQuery({
+    queryKey: memoryKeys.threadsInfinite(resourceId, agentId, search),
+    queryFn: ({ pageParam = 0 }) => listThreads(resourceId, agentId, { page: pageParam as number, perPage, search }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage: any, _allPages, lastPageParam) => {
+      const arr = Array.isArray(lastPage) ? lastPage : (lastPage as any)?.threads ?? (lastPage as any)?.data ?? [];
+      if (arr.length < perPage) return undefined;
+      return (lastPageParam as number) + 1;
+    },
+    enabled: Boolean(resourceId),
+    staleTime: 30_000,
+    gcTime: 1000 * 60 * 60 * 24,
+  });
+}
+
+export function useThreadSearch(resourceId: string, agentId?: string, query?: string, perPage = 12) {
+  const debounced = (query ?? "").trim();
+  return useInfiniteQuery({
+    queryKey: memoryKeys.threadsSearch(resourceId, agentId, debounced),
+    queryFn: ({ pageParam = 0 }) => listThreads(resourceId, agentId, { page: pageParam as number, perPage, search: debounced || undefined }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage: any, _allPages, lastPageParam) => {
+      const arr = Array.isArray(lastPage) ? lastPage : (lastPage as any)?.threads ?? (lastPage as any)?.data ?? [];
+      if (arr.length < perPage) return undefined;
+      return (lastPageParam as number) + 1;
+    },
+    enabled: Boolean(resourceId),
+    staleTime: 10_000,
   });
 }
 

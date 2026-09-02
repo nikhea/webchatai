@@ -31,17 +31,37 @@ export async function listThreads(
   options?: {
     page?: number;
     perPage?: number;
+    search?: string;
+    metadata?: Record<string, unknown>;
   },
 ) {
   return mastraClient.listMemoryThreads({
     resourceId,
     agentId,
     page: options?.page ?? 0,
-    perPage: options?.perPage ?? 100,
+    perPage: options?.perPage ?? 20,
+    ...(options?.metadata ? { metadata: options.metadata } : {}),
+    ...(options?.search ? { search: options.search } as any : {}),
     orderBy: {
       field: "createdAt",
       direction: "DESC",
     },
+  } as any);
+}
+
+export async function listPinnedThreads(resourceId: string, agentId?: string) {
+  return listThreads(resourceId, agentId, { perPage: 100, metadata: { pinned: true } });
+}
+
+export async function listRegularThreads(
+  resourceId: string,
+  agentId?: string,
+  options?: { page?: number; perPage?: number; search?: string },
+) {
+  return listThreads(resourceId, agentId, {
+    page: options?.page ?? 0,
+    perPage: options?.perPage ?? 20,
+    search: options?.search,
   });
 }
 

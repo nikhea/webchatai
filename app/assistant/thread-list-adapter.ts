@@ -94,7 +94,8 @@ export function createMastraThreadListAdapter(
 ): RemoteThreadListAdapter {
   return {
     async list() {
-      const key = memoryKeys.threads(resourceId, AGENT_ID);
+      const key = memoryKeys.threads(resourceId, AGENT_ID, 0, 20);
+      const pinnedKey = [...memoryKeys.threads(resourceId, AGENT_ID, 0, 100), "pinned"] as const;
       const mapRows = (rows: any) => {
         const arr = Array.isArray(rows) ? rows : ((rows as any)?.threads ?? []);
         const mapped = arr.map((t: any) => ({
@@ -143,15 +144,28 @@ export function createMastraThreadListAdapter(
         };
       };
 
-      const threads = await queryClient.fetchQuery({
-        queryKey: key,
-        queryFn: () => listThreads(resourceId, AGENT_ID, { perPage: 100 }),
-        persister: queryPersister.persisterFn as any,
-        gcTime: 24 * 60 * 60 * 1000,
-        staleTime: 0,
-      } as any);
+      const [pinnedRaw, threads] = await Promise.all([
+        queryClient.fetchQuery({
+          queryKey: pinnedKey as any,
+          queryFn: () => listThreads(resourceId, AGENT_ID, { perPage: 100, metadata: { pinned: true } as any }),
+          staleTime: 10_000,
+          gcTime: 60 * 60 * 1000,
+        } as any).catch(() => null),
+        queryClient.fetchQuery({
+          queryKey: key,
+          queryFn: () => listThreads(resourceId, AGENT_ID, { perPage: 20 }),
+          persister: queryPersister.persisterFn as any,
+          gcTime: 24 * 60 * 60 * 1000,
+          staleTime: 0,
+        } as any),
+      ]);
 
-      return mapRows(threads);
+      const main = mapRows(threads);
+      if (!pinnedRaw) return main;
+      const pinned = mapRows(pinnedRaw);
+      const pinnedIds = new Set(pinned.threads.map((t: any) => t.remoteId));
+      const regular = main.threads.filter((t: any) => !pinnedIds.has(t.remoteId));
+      return { threads: [...pinned.threads, ...regular] };
     },
 
     async initialize(_threadId) {

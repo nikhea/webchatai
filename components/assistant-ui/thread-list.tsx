@@ -12,8 +12,9 @@ import {
   useAui,
   useAuiState,
 } from "@assistant-ui/react";
-import { memoryKeys } from "@/app/queries/memory.query";
-import { AGENT_ID, pinThread, RESOURCE_ID_KEY, unpinThread } from "@/lib/mastra/memory-queries";
+import { memoryKeys, useInfiniteThreads } from "@/app/queries/memory.query";
+import { AGENT_ID, pinThread, RESOURCE_ID_KEY, unpinThread, listThreads } from "@/lib/mastra/memory-queries";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {
   ArchiveIcon,
   GitBranchIcon,
@@ -89,11 +90,24 @@ export const ThreadListRoot: FC<ComponentPropsWithoutRef<typeof ThreadListPrimit
   );
 };
 
+function useDebounced<T>(value: T, delay = 300) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
+}
+
 export const ThreadListItems: FC<ComponentPropsWithoutRef<"div"> & { searchQuery?: string }> = ({
   className,
   searchQuery = "",
   ...props
 }) => {
+  const hasServerSearch = searchQuery.trim().length > 0;
+  if (hasServerSearch) {
+    return <ServerThreadList searchQuery={searchQuery} className={className} {...props} />;
+  }
   return (
     <div
       data-slot="aui_thread-list-items"
@@ -106,6 +120,106 @@ export const ThreadListItems: FC<ComponentPropsWithoutRef<"div"> & { searchQuery
       <AuiIf condition={(s) => !s.threads.isLoading}>
         <ThreadListItemGroups searchQuery={searchQuery} />
       </AuiIf>
+      <InfiniteThreadLoader />
+    </div>
+  );
+};
+
+const InfiniteThreadLoader: FC = () => {
+  const aui = useAui();
+  const queryClient = useQueryClient();
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const [page, setPage] = useState(1);
+  const hasFetchedRef = useRef(false);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !hasFetchedRef.current) {
+          hasFetchedRef.current = true;
+          (async () => {
+            try {
+              const res: any = await queryClient.fetchQuery({
+                queryKey: memoryKeys.threads(RESOURCE_ID_KEY, AGENT_ID, page, 20),
+                queryFn: () => listThreads(RESOURCE_ID_KEY, AGENT_ID, { page, perPage: 20 }),
+              } as any);
+              const arr = Array.isArray(res) ? res : (res as any)?.threads ?? [];
+              if (arr.length > 0) {
+                const adapter: any = (aui as any)._adapter ?? (aui as any).threads;
+                hasFetchedRef.current = false;
+                setPage((p) => p + 1);
+              }
+            } catch {
+              hasFetchedRef.current = false;
+            }
+          })();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [page, queryClient, aui]);
+  return <div ref={sentinelRef} className="h-1" />;
+};
+
+const ServerThreadList: FC<{ searchQuery: string; className?: string }> = ({ searchQuery, className }) => {
+  const debounced = useDebounced(searchQuery, 300);
+  const aui = useAui();
+  const infinite = useInfiniteThreads(RESOURCE_ID_KEY, AGENT_ID, debounced, 20);
+  const pinnedQ = useQuery({
+    queryKey: [...memoryKeys.threads(RESOURCE_ID_KEY, AGENT_ID, 0, 100), "pinned"] as any,
+    queryFn: () => listThreads(RESOURCE_ID_KEY, AGENT_ID, { perPage: 100, metadata: { pinned: true } as any }),
+    staleTime: 10_000,
+  });
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !infinite.hasNextPage || infinite.isFetchingNextPage) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) infinite.fetchNextPage();
+      },
+      { rootMargin: "200px" }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [infinite.hasNextPage, infinite.isFetchingNextPage, infinite]);
+  const pages = infinite.data?.pages ?? [];
+  const regular = pages.flatMap((p: any) => (Array.isArray(p) ? p : (p as any)?.threads ?? (p as any)?.data ?? []));
+  const pinned = (() => {
+    const d: any = pinnedQ.data;
+    if (!d) return [];
+    const arr = Array.isArray(d) ? d : d?.threads ?? d?.data ?? [];
+    return arr;
+  })();
+  const switchTo = (id: string) => {
+    try {
+      (aui as unknown as { threads: { switchToThread: (id: string) => void } }).threads.switchToThread(id);
+    } catch {}
+  };
+  if (infinite.isLoading) return <ThreadListSkeleton />;
+  const merged = (() => {
+    const pinnedIds = new Set(pinned.map((t: any) => t.id));
+    const filtered = regular.filter((t: any) => !pinnedIds.has(t.id));
+    return [...pinned, ...filtered];
+  })();
+  if (merged.length === 0) return <div className="text-muted-foreground px-2.5 py-4 text-sm">No threads found</div>;
+  return (
+    <div className={cn("flex flex-col gap-0.5", className)}>
+      {merged.map((t: any) => (
+        <button
+          key={t.id}
+          onClick={() => switchTo(t.id)}
+          className="hover:bg-muted flex h-8 items-center rounded-md px-2.5 text-left text-sm"
+        >
+          {!!t.metadata?.pinned && <PinIcon className="text-muted-foreground me-1.5 size-3.5 shrink-0" />}
+          <span className="min-w-0 flex-1 truncate">{t.title ?? "New Chat"}</span>
+        </button>
+      ))}
+      <div ref={sentinelRef} className="h-1" />
+      {infinite.isFetchingNextPage && <div className="px-2.5 py-2 text-xs text-muted-foreground">Loading more…</div>}
     </div>
   );
 };
@@ -497,7 +611,7 @@ const ThreadListItemMore: FC<{ onRename: () => void }> = ({ onRename }) => {
           render={
             <ThreadListItemMorePrimitive.Item
               data-slot="aui_thread-list-item-more-item"
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive focus:bg-destructive/10 focus:text-destructive flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm outline-none select-none"
+              className="text-red-500 hover:bg-red-500/15 hover:text-red-600 focus:bg-red-500/15 focus:text-red-600 data-disabled:opacity-100 flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-medium opacity-100 outline-none select-none"
             />
           }
         >
