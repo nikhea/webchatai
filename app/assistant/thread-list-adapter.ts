@@ -212,14 +212,40 @@ export function createMastraThreadListAdapter(
     },
 
     async delete(remoteId) {
-      await deleteThread(AGENT_ID, remoteId);
-      await queryClient.invalidateQueries({
-        queryKey: memoryKeys.threads(resourceId, AGENT_ID),
+      const key = memoryKeys.threads(resourceId, AGENT_ID);
+      const prev = queryClient.getQueryData(key as never) as unknown;
+      queryClient.setQueryData(key as never, (old: unknown) => {
+        const data = old as { threads?: { id: string }[] } | { id: string }[] | undefined;
+        if (!data) return old as never;
+        if (Array.isArray(data)) return (data as { id: string }[]).filter((t) => t.id !== remoteId) as never;
+        const arr = (data as { threads?: { id: string }[] }).threads;
+        if (Array.isArray(arr)) return { ...(data as object), threads: arr.filter((t) => t.id !== remoteId) } as never;
+        return old as never;
       });
-      queryClient.removeQueries({
-        queryKey: memoryKeys.thread(remoteId, AGENT_ID),
-      });
-      queryClient.removeQueries({ queryKey: ["memory", "thread", remoteId] });
+      try {
+        await deleteThread(AGENT_ID, remoteId);
+      } catch (e) {
+        queryClient.setQueryData(key as never, prev as never);
+        throw e;
+      }
+      queryClient.removeQueries({ queryKey: key });
+      queryClient.removeQueries({ queryKey: memoryKeys.thread(remoteId, AGENT_ID) });
+      queryClient.removeQueries({ queryKey: ["memory", "thread", remoteId] as never });
+      await queryClient.invalidateQueries({ queryKey: key });
+      await queryClient.refetchQueries({ queryKey: key });
+      await queryClient.invalidateQueries({ queryKey: ["mastra", "threads"] as never });
+      try {
+        const { del, entries } = await import("idb-keyval");
+        const all = await entries();
+        for (const [k] of all as [string, unknown][]) {
+          if (typeof k === "string" && k.includes("praxis-query")) {
+            const raw = String(k);
+            if (raw.includes(resourceId) || raw.includes(AGENT_ID)) {
+              await del(k as never);
+            }
+          }
+        }
+      } catch {}
     },
 
     async fetch(remoteId) {

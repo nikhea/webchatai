@@ -228,13 +228,55 @@ export async function branchThreadAtMessage(
   threadId: string,
   messageId: string,
 ) {
-  const original = await fetchThread(agentId, threadId);
-  const baseTitle = (original as unknown as { title?: string }).title ?? "New Conversation";
+  if (!threadId || threadId.startsWith("__LOCALID_")) {
+    throw new Error("Cannot branch a local unsaved thread. Send a message first.");
+  }
+  let baseTitle = "New Conversation";
+  try {
+    const original = await fetchThread(agentId, threadId);
+    baseTitle = (original as unknown as { title?: string }).title ?? baseTitle;
+  } catch (e) {
+    const msg = String((e as Error)?.message ?? e);
+    if (msg.includes("Thread not found") || msg.includes("404")) {
+      throw new Error("Thread not found on server. It may have been deleted or not yet saved.");
+    }
+    throw e;
+  }
   const cloneTitle = baseTitle.endsWith(" (clone)") ? baseTitle : `${baseTitle} (clone)`;
 
-  const { thread: clonedThread } = await cloneThread(agentId, threadId, {
-    title: cloneTitle,
-  });
+  let clonedThread: unknown;
+  try {
+    const res = await cloneThread(agentId, threadId, {
+      title: cloneTitle,
+    });
+    clonedThread = (res as { thread: unknown }).thread;
+  } catch (e) {
+    const msg = String((e as Error)?.message ?? e);
+    if (msg.includes("Thread not found") || msg.includes("404")) {
+      const fallback = await createThread(RESOURCE_ID_KEY, agentId, cloneTitle);
+      try {
+        const fetched: unknown = await listMessages(agentId, threadId, { page: 0, perPage: 200 });
+        const rows: unknown[] = (fetched as { messages?: unknown[] })?.messages ?? (Array.isArray(fetched) ? (fetched as unknown[]) : []);
+        const sorted = [...(rows as { id: string; createdAt?: string | number | Date; role?: string; content?: unknown; text?: string }[])].sort(
+          (a, b) => new Date(a.createdAt as string).getTime() - new Date(b.createdAt as string).getTime(),
+        );
+        const idx = sorted.findIndex((m) => m.id === messageId);
+        const toCopy = idx !== -1 ? sorted.slice(0, idx + 1) : sorted;
+        if (toCopy.length) {
+          await mastraClient.saveMessageToMemory({
+            messages: toCopy.map((m) => ({
+              ...m,
+              threadId: (fallback as unknown as { id: string }).id,
+              resourceId: RESOURCE_ID_KEY,
+            })) as unknown as never[],
+            agentId,
+          });
+        }
+      } catch {}
+      return fallback;
+    }
+    throw e;
+  }
 
   const newThreadId = (clonedThread as unknown as { id: string }).id;
   try {
@@ -249,10 +291,16 @@ export async function branchThreadAtMessage(
       if (toDelete.length) {
         await deleteMessages(agentId, newThreadId, toDelete);
       }
+    } else if (branchIdx === -1) {
+      const byText = sorted.findIndex(
+        (m) => String((m as unknown as { content?: unknown }).content ?? (m as unknown as { text?: string }).text ?? "").slice(0, 40) ===
+          String(sorted.find((x) => x.id === messageId) as unknown as { content?: unknown })?.toString().slice(0, 40),
+      );
+      void byText;
     }
   } catch {}
 
-  return clonedThread;
+  return clonedThread as never;
 }
 
 /**

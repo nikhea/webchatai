@@ -77,6 +77,7 @@ import {
   DatabaseIcon,
   DownloadIcon,
   GitBranchIcon,
+  GlobeIcon,
   GraduationCapIcon,
   MicIcon,
   MoreHorizontalIcon,
@@ -102,6 +103,7 @@ import {
   type PropsWithChildren,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { composerState } from "@/lib/composer-state";
 
 export type ThreadGroupPart = MessagePrimitive.GroupedParts.GroupPart;
 
@@ -579,6 +581,14 @@ const ComposerModelPicker: FC = () => {
   const [selected, setSelected] = useState("Gemini 3 Flash");
   const [open, setOpen] = useState(false);
   useEffect(() => {
+    composerState.modelName = selected;
+  }, [selected]);
+  useEffect(() => {
+    const handler = () => setOpen((v) => !v);
+    window.addEventListener("toggle-model-picker", handler);
+    return () => window.removeEventListener("toggle-model-picker", handler);
+  }, []);
+  useEffect(() => {
     return aui.modelContext.register({
       getModelContext: () => ({ config: { modelName: selected } }),
     });
@@ -596,6 +606,32 @@ const ComposerModelPicker: FC = () => {
         }}
       />
     </div>
+  );
+};
+
+const ComposerWebSearchToggle: FC = () => {
+  const aui = useAui();
+  const [enabled, setEnabled] = useState(false);
+  useEffect(() => {
+    composerState.webSearchEnabled = enabled;
+  }, [enabled]);
+  useEffect(() => {
+    return aui.modelContext.register({
+      getModelContext: () => ({ config: { webSearchEnabled: enabled } as unknown as Record<string, unknown> }),
+    });
+  }, [aui, enabled]);
+  return (
+    <TooltipIconButton
+      tooltip={enabled ? "Web search: on (click to disable)" : "Web search: off (click to enable)"}
+      variant={enabled ? "default" : "ghost"}
+      size="icon"
+      className={cn("size-7 rounded-full", enabled && "bg-primary text-primary-foreground")}
+      onClick={() => setEnabled((v) => !v)}
+      aria-pressed={enabled}
+      aria-label="Toggle web search"
+    >
+      <GlobeIcon className="size-4" />
+    </TooltipIconButton>
   );
 };
 
@@ -643,6 +679,7 @@ const ComposerAction: FC = () => {
     <div className="aui-composer-action-wrapper relative flex items-center justify-between">
       <div className="flex items-center gap-1.5">
         <ComposerAddAttachment />
+        <ComposerWebSearchToggle />
         <ComposerModelPicker />
       </div>
       <div className="flex items-center gap-1.5">
@@ -1170,6 +1207,10 @@ const BranchButton: FC = () => {
   });
   const handleBranch = async () => {
     if (busy || !threadId || !message?.id) return;
+    if (String(threadId).startsWith("__LOCALID_")) {
+      console.warn("Branch unavailable for local thread");
+      return;
+    }
     setBusy(true);
     try {
       const { AGENT_ID, branchThreadAtMessage } = await import("@/lib/mastra/memory-queries");
@@ -1184,13 +1225,23 @@ const BranchButton: FC = () => {
       window.history.pushState(null, "", `/chat/${newId}`);
       window.dispatchEvent(new PopStateEvent("popstate"));
     } catch (e) {
+      const msg = String((e as Error)?.message ?? e);
+      if (msg.includes("Thread not found")) {
+        alert("Branch failed: Thread not found on server. Please send a message first to save the thread.");
+      }
       console.error("branch failed", e);
     } finally {
       setBusy(false);
     }
   };
+  const isLocal = !threadId || String(threadId).startsWith("__LOCALID_");
   return (
-    <TooltipIconButton tooltip="Branch" onClick={handleBranch} aria-disabled={busy} className={busy ? "opacity-50" : ""}>
+    <TooltipIconButton
+      tooltip={isLocal ? "Branch unavailable until thread is saved" : "Branch"}
+      onClick={handleBranch}
+      aria-disabled={busy || isLocal}
+      className={busy || isLocal ? "opacity-40 pointer-events-none" : ""}
+    >
       <GitBranchIcon className="size-4" />
     </TooltipIconButton>
   );

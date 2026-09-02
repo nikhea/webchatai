@@ -26,7 +26,7 @@ function DropdownMenuContent({
 }: MenuPrimitive.Popup.Props & { sideOffset?: number; align?: string }) {
   return (
     <MenuPrimitive.Portal>
-      <MenuPrimitive.Positioner sideOffset={sideOffset} align={align as never} className="z-50 outline-none" side="top">
+      <MenuPrimitive.Positioner sideOffset={sideOffset} align={align as never} className="z-50 outline-none" side="bottom">
         <MenuPrimitive.Popup
           data-slot="dropdown-menu-content"
           className={cn(

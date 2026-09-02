@@ -17,7 +17,7 @@ const idbStorage = {
   },
 };
 
-export const BUSTER = "praxis-v2";
+export const BUSTER = "praxis-v3";
 
 export const queryPersister = experimental_createQueryPersister({
   storage: idbStorage,

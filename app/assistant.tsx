@@ -19,12 +19,14 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { ThreadListSidebar } from "@/components/assistant-ui/threadlist-sidebar";
 import { ThreadSearchDialog } from "@/components/assistant-ui/thread-search-dialog";
 import { PanelLeftIcon, SearchIcon, PlusIcon } from "lucide-react";
-import { useAui } from "@assistant-ui/react";
+import { useAui, useAuiState } from "@assistant-ui/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createMastraThreadListAdapter } from "./assistant/thread-list-adapter";
-import { RESOURCE_ID_KEY } from "@/lib/mastra/memory-queries";
+import { RESOURCE_ID_KEY, AGENT_ID, deleteThread } from "@/lib/mastra/memory-queries";
 import { attachmentAdapter } from "@/lib/attachment-adapter";
+import { HotkeysProvider, useHotkey } from "@tanstack/react-hotkeys";
+import { composerState } from "@/lib/composer-state";
 
 export const Assistant = ({
   threadId: initialThreadId,
@@ -124,6 +126,8 @@ export const Assistant = ({
                 thread: tid as string,
                 resource: RESOURCE_ID_KEY,
               },
+              modelName: composerState.modelName,
+              webSearchEnabled: composerState.webSearchEnabled,
             };
           },
         }),
@@ -160,21 +164,124 @@ export const Assistant = ({
 
   return (
     <AssistantRuntimeProvider runtime={runtime} config={config}>
-      <SidebarProvider>
-        <div className="flex h-dvh w-full pr-0.5">
-          <ThreadListSidebar onSearchOpen={() => setSearchOpen(true)} />
-          <SidebarInset className="relative">
-            <AssistantHeader onSearchOpen={() => setSearchOpen(true)} />
-            <div className="flex-1 overflow-hidden">
-              <Thread />
-            </div>
-            <ThreadSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
-          </SidebarInset>
-        </div>
-      </SidebarProvider>
+      <HotkeysProvider>
+        <SidebarProvider>
+          <AssistantHotkeys
+            onSearchOpen={() => setSearchOpen(true)}
+            currentThreadId={currentThreadId}
+            currentThreadIdRef={currentThreadIdRef}
+            setCurrentThreadId={setCurrentThreadId}
+            adapter={adapter}
+          />
+          <div className="flex h-dvh w-full pr-0.5">
+            <ThreadListSidebar onSearchOpen={() => setSearchOpen(true)} />
+            <SidebarInset className="relative">
+              <AssistantHeader onSearchOpen={() => setSearchOpen(true)} />
+              <div className="flex-1 overflow-hidden">
+                <Thread />
+              </div>
+              <ThreadSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+            </SidebarInset>
+          </div>
+        </SidebarProvider>
+      </HotkeysProvider>
     </AssistantRuntimeProvider>
   );
 };
+
+function AssistantHotkeys({
+  onSearchOpen,
+  currentThreadId,
+  currentThreadIdRef,
+  setCurrentThreadId,
+  adapter,
+}: {
+  onSearchOpen: () => void;
+  currentThreadId: string | undefined;
+  currentThreadIdRef: React.MutableRefObject<string | undefined>;
+  setCurrentThreadId: (id: string | undefined) => void;
+  adapter: ReturnType<typeof createMastraThreadListAdapter>;
+}) {
+  const { toggleSidebar } = useSidebar();
+  const aui = useAui();
+  const queryClient = useQueryClient();
+  const threadIds = useAuiState((s) => (s as unknown as { threads: { threadIds: string[] } }).threads.threadIds ?? []);
+  const getCurrentId = () => currentThreadIdRef.current ?? currentThreadId;
+
+  const switchTo = (id: string) => {
+    try {
+      (aui as unknown as { threads: { switchToThread: (id: string) => void } }).threads.switchToThread(id);
+    } catch {}
+    window.history.pushState(null, "", `/chat/${id}`);
+    setCurrentThreadId(id);
+    currentThreadIdRef.current = id;
+  };
+
+  const newChat = () => {
+    try {
+      (aui as unknown as { threads: { switchToNewThread: () => void } }).threads.switchToNewThread();
+    } catch {}
+    window.history.pushState(null, "", "/");
+    setCurrentThreadId(undefined);
+    currentThreadIdRef.current = undefined;
+  };
+
+  const deleteCurrent = async () => {
+    const tid = getCurrentId();
+    if (!tid) return newChat();
+    if (tid.startsWith("__LOCALID_")) return newChat();
+    const targetId = tid;
+    newChat();
+    try {
+      try {
+        await (adapter as unknown as { delete: (id: string) => Promise<void> }).delete(targetId);
+      } catch {
+        await deleteThread(AGENT_ID, targetId);
+        const { memoryKeys } = await import("@/app/queries/memory.query");
+        const key = memoryKeys.threads(RESOURCE_ID_KEY, AGENT_ID);
+        queryClient.setQueryData(key as never, (old: unknown) => {
+          const data = old as { threads?: { id: string }[] } | { id: string }[] | undefined;
+          if (!data) return old as never;
+          if (Array.isArray(data)) return data.filter((t: { id: string }) => t.id !== targetId) as never;
+          const arr = (data as { threads?: { id: string }[] }).threads;
+          if (Array.isArray(arr)) return { ...data, threads: arr.filter((t) => t.id !== targetId) } as never;
+          return old as never;
+        });
+        queryClient.removeQueries({ queryKey: memoryKeys.thread(targetId, AGENT_ID) });
+        queryClient.removeQueries({ queryKey: ["memory", "thread", targetId] as never });
+        queryClient.removeQueries({ queryKey: key });
+        await queryClient.invalidateQueries({ queryKey: key });
+        await queryClient.refetchQueries({ queryKey: key });
+      }
+    } catch {}
+  };
+
+  const goPrev = () => {
+    const tid = getCurrentId();
+    const idx = threadIds.indexOf(tid ?? "");
+    if (idx > 0) switchTo(threadIds[idx - 1]);
+    else if (idx === -1 && threadIds.length) switchTo(threadIds[0]);
+  };
+  const goNext = () => {
+    const tid = getCurrentId();
+    const idx = threadIds.indexOf(tid ?? "");
+    if (idx !== -1 && idx < threadIds.length - 1) switchTo(threadIds[idx + 1]);
+    else if (idx === -1 && threadIds.length) switchTo(threadIds[0]);
+  };
+
+  useHotkey("Control+K", () => onSearchOpen(), { preventDefault: true, ignoreInputs: false } as never);
+  useHotkey("Control+B", () => toggleSidebar(), { preventDefault: true, ignoreInputs: false } as never);
+  useHotkey("Control+/", () => window.dispatchEvent(new CustomEvent("toggle-model-picker")), { preventDefault: true, ignoreInputs: false } as never);
+  useHotkey("Control+,", () => (window.location.href = "/settings"), { preventDefault: true, ignoreInputs: false } as never);
+  useHotkey("Control+Shift+Backspace", () => void deleteCurrent(), { preventDefault: true, ignoreInputs: false } as never);
+  useHotkey("Control+Shift+Delete", () => void deleteCurrent(), { preventDefault: true, ignoreInputs: false } as never);
+  useHotkey("Control+Shift+O", () => newChat(), { preventDefault: true, ignoreInputs: false } as never);
+  useHotkey("Control+Shift+0", () => newChat(), { preventDefault: true, ignoreInputs: false } as never);
+  useHotkey("Control+Alt+ArrowUp", () => goPrev(), { preventDefault: true, ignoreInputs: false });
+  useHotkey("Control+Alt+ArrowDown", () => goNext(), { preventDefault: true, ignoreInputs: false });
+
+  return null;
+}
 
 function AssistantHeader({ onSearchOpen }: { onSearchOpen: () => void }) {
   const { state, isMobile, toggleSidebar } = useSidebar();

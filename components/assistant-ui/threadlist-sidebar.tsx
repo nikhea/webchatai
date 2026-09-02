@@ -1,4 +1,5 @@
 import type * as React from "react";
+import Link from "next/link";
 import {
   ChevronRightIcon,
   CommandIcon,
@@ -97,7 +98,9 @@ export function ThreadListSidebar({
             <DropdownMenuLabel className="text-muted-foreground truncate px-2.5 py-1.5 text-xs font-normal">
               imonikheaugbodaga@gmail.com
             </DropdownMenuLabel>
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              render={<Link href="/settings" />}
+            >
               <SettingsIcon />
               <span className="flex-1">Settings</span>
               <span className="text-muted-foreground flex items-center gap-1 text-xs">
