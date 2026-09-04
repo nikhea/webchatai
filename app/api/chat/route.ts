@@ -1,6 +1,7 @@
 import { openai } from "@ai-sdk/openai";
 import { frontendTools, injectQuoteContext } from "@assistant-ui/react-ai-sdk";
-import { type JSONSchema7, streamText, convertToModelMessages, type UIMessage } from "ai";
+import { type JSONSchema7, streamText, convertToModelMessages, tool, zodSchema, type UIMessage } from "ai";
+import { z } from "zod";
 
 export async function POST(req: Request) {
   const {
@@ -37,6 +38,14 @@ export async function POST(req: Request) {
     system: finalSystem,
     tools: {
       ...frontendTools(tools ?? {}),
+      deploy: tool({
+        description: "Deploy the current build to an environment.",
+        inputSchema: zodSchema(z.object({ target: z.string() })),
+        execute: async ({ target }) => ({ deployed: target }),
+      }),
+    },
+    toolApproval: {
+      deploy: (input) => (input.target === "production" ? "user-approval" : "not-applicable"),
     },
     providerOptions: {
       openai: {

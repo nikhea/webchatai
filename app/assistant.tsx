@@ -6,13 +6,16 @@ import {
   Suggestions,
   useRemoteThreadListRuntime,
   WebSpeechDictationAdapter,
+  defineToolkit,
+  Tools,
+  type ToolApprovalResponse,
 } from "@assistant-ui/react";
 import { KokoroFastAPIAdapter } from "@/lib/kokoro-fastapi-adapter";
 import {
   useChatRuntime,
   AssistantChatTransport,
 } from "@assistant-ui/react-ai-sdk";
-import { lastAssistantMessageIsCompleteWithToolCalls } from "ai";
+import { lastAssistantMessageIsCompleteWithApprovalResponses } from "ai";
 import { Thread } from "@/components/assistant-ui/thread";
 import { SidebarInset, SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -27,6 +30,7 @@ import { RESOURCE_ID_KEY, AGENT_ID, deleteThread } from "@/lib/mastra/memory-que
 import { attachmentAdapter } from "@/lib/attachment-adapter";
 import { HotkeysProvider, useHotkey } from "@tanstack/react-hotkeys";
 import { composerState } from "@/lib/composer-state";
+import { useHotkeysStore, keysToHotkey } from "@/lib/hotkeys-store";
 
 export const Assistant = ({
   threadId: initialThreadId,
@@ -101,7 +105,7 @@ export const Assistant = ({
           dictation: dictationAdapter,
           attachments: attachmentAdapter,
         },
-        sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+        sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
         transport: new AssistantChatTransport({
           api: `${process.env.NEXT_PUBLIC_MASTRA_BASE_URL ?? process.env.MASTRA_BASE_URL ?? "http://localhost:4111"}/chat/working-memory-personal-assistant-agent`,
           body: () => {
@@ -142,7 +146,91 @@ export const Assistant = ({
     runtimeHook,
   });
 
+  const toolkit = defineToolkit({
+    get_weather: {
+      type: "backend",
+      render: ({ args, approval, respondToApproval, result }) => {
+        const answer = async (response: ToolApprovalResponse) => {
+          try {
+            await respondToApproval(response);
+          } catch (e) {
+            console.error(e);
+          }
+        };
+        const isPending = !!approval && approval.approved === undefined && (approval as any).resolution === undefined;
+        if (isPending) {
+          return (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/20">
+              <p className="text-sm">
+                Approve weather lookup for <b>{(args as any)?.location ?? "unknown location"}</b>?
+              </p>
+              <div className="mt-2 flex gap-2">
+                <button
+                  className="rounded-md bg-black px-3 py-1 text-xs text-white dark:bg-white dark:text-black"
+                  onClick={() => void answer({ approved: true })}
+                >
+                  Approve
+                </button>
+                <button
+                  className="rounded-md border px-3 py-1 text-xs"
+                  onClick={() => void answer({ approved: false, reason: "user denied" })}
+                >
+                  Deny
+                </button>
+              </div>
+            </div>
+          );
+        }
+        if (approval?.approved === false) return <p className="text-sm text-red-600">Denied: {approval.reason ?? "user denied"}</p>;
+        if (approval?.approved === true && result === undefined) return <p className="text-sm">Approved, fetching weather…</p>;
+        if (result !== undefined) return <p className="text-sm">Weather: {JSON.stringify(result)}</p>;
+        return null;
+      },
+    },
+    deploy: {
+      type: "backend",
+      render: ({ args, approval, respondToApproval, result }) => {
+        const answer = async (response: ToolApprovalResponse) => {
+          try {
+            await respondToApproval(response);
+          } catch (e) {
+            console.error(e);
+          }
+        };
+        const isPending = !!approval && approval.approved === undefined && (approval as any).resolution === undefined;
+        if (isPending) {
+          return (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/20">
+              <p className="text-sm">
+                Approve deploy to <b>{(args as any)?.target ?? "unknown"}</b>?
+              </p>
+              <div className="mt-2 flex gap-2">
+                <button
+                  className="rounded-md bg-black px-3 py-1 text-xs text-white dark:bg-white dark:text-black"
+                  onClick={() => void answer({ approved: true })}
+                >
+                  Approve
+                </button>
+                <button
+                  className="rounded-md border px-3 py-1 text-xs"
+                  onClick={() => void answer({ approved: false, reason: "user denied" })}
+                >
+                  Deny
+                </button>
+              </div>
+            </div>
+          );
+        }
+        if (approval?.approved === false) return <p className="text-sm text-red-600">Deploy denied</p>;
+        if (approval?.approved === true && result === undefined) return <p className="text-sm">Approved, deploying…</p>;
+        if (result !== undefined) return <p className="text-sm">Deployed {(result as any)?.deployed}</p>;
+        return null;
+      },
+    },
+  });
+
   const config = AuiConfig({
+    tools: Tools({ toolkit }),
     suggestions: Suggestions([
       {
         title: "Plan a project",
@@ -269,16 +357,17 @@ function AssistantHotkeys({
     else if (idx === -1 && threadIds.length) switchTo(threadIds[0]);
   };
 
-  useHotkey("Control+K", () => onSearchOpen(), { preventDefault: true, ignoreInputs: false } as never);
-  useHotkey("Control+B", () => toggleSidebar(), { preventDefault: true, ignoreInputs: false } as never);
-  useHotkey("Control+/", () => window.dispatchEvent(new CustomEvent("toggle-model-picker")), { preventDefault: true, ignoreInputs: false } as never);
-  useHotkey("Control+,", () => (window.location.href = "/settings"), { preventDefault: true, ignoreInputs: false } as never);
-  useHotkey("Control+Shift+Backspace", () => void deleteCurrent(), { preventDefault: true, ignoreInputs: false } as never);
-  useHotkey("Control+Shift+Delete", () => void deleteCurrent(), { preventDefault: true, ignoreInputs: false } as never);
-  useHotkey("Control+Shift+O", () => newChat(), { preventDefault: true, ignoreInputs: false } as never);
-  useHotkey("Control+Shift+0", () => newChat(), { preventDefault: true, ignoreInputs: false } as never);
-  useHotkey("Control+Alt+ArrowUp", () => goPrev(), { preventDefault: true, ignoreInputs: false });
-  useHotkey("Control+Alt+ArrowDown", () => goNext(), { preventDefault: true, ignoreInputs: false });
+  const hotkeys = useHotkeysStore((s) => s.hotkeys);
+  useHotkey((keysToHotkey(hotkeys.search) || "Control+K") as never, () => onSearchOpen(), { preventDefault: true, ignoreInputs: false } as never);
+  useHotkey((keysToHotkey(hotkeys.toggleSidebar) || "Control+B") as never, () => toggleSidebar(), { preventDefault: true, ignoreInputs: false } as never);
+  useHotkey((keysToHotkey(hotkeys.openModelPicker) || "Control+/") as never, () => window.dispatchEvent(new CustomEvent("toggle-model-picker")), { preventDefault: true, ignoreInputs: false } as never);
+  useHotkey((keysToHotkey(hotkeys.settings) || "Control+,") as never, () => (window.location.href = "/settings"), { preventDefault: true, ignoreInputs: false } as never);
+  useHotkey((keysToHotkey(hotkeys.deleteCurrent) || "Control+Shift+Backspace") as never, () => void deleteCurrent(), { preventDefault: true, ignoreInputs: false } as never);
+  useHotkey("Control+Shift+Delete" as never, () => void deleteCurrent(), { preventDefault: true, ignoreInputs: false } as never);
+  useHotkey((keysToHotkey(hotkeys.newChat) || "Control+Shift+O") as never, () => newChat(), { preventDefault: true, ignoreInputs: false } as never);
+  useHotkey("Control+Shift+0" as never, () => newChat(), { preventDefault: true, ignoreInputs: false } as never);
+  useHotkey((keysToHotkey(hotkeys.prevThread) || "Control+Alt+ArrowUp") as never, () => goPrev(), { preventDefault: true, ignoreInputs: false });
+  useHotkey((keysToHotkey(hotkeys.nextThread) || "Control+Alt+ArrowDown") as never, () => goNext(), { preventDefault: true, ignoreInputs: false });
 
   return null;
 }

@@ -105,6 +105,80 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { composerState } from "@/lib/composer-state";
 
+const MastraSuspendFallback: FC<{ part: any }> = ({ part }) => {
+  const anyPart: any = part as any;
+  const data: any = anyPart.data ?? anyPart.value ?? anyPart;
+  const inner: any = data?.data ?? data;
+  const name: string = anyPart.name ?? anyPart.type ?? "";
+  const isSuspend = name === "tool-call-suspended" || inner?.state === "data-tool-call-suspended" || !!inner?.suspendPayload;
+  const isApproval = name === "tool-call-approval" || inner?.state === "data-tool-call-approval";
+  if (!isSuspend && !isApproval) return (part as any).dataRendererUI ?? null;
+  const question: string = inner?.suspendPayload?.question ?? inner?.question ?? `Approve ${inner?.toolName ?? "action"}?`;
+  const toolName: string = inner?.toolName ?? "tool";
+  const args: any = inner?.args ?? {};
+  const aui: any = useAui() as any;
+  const threadId = useAuiState((s: any) => s.thread?.id ?? s.threads?.mainThreadId ?? (s as any).message?.threadId) as string | undefined;
+  const send = (approved: boolean) => {
+    const text = approved ? "Approved" : "Denied";
+    const tryComposer = () => {
+      try {
+        const c1: any = (aui as any)?.composer;
+        if (c1?.setText && c1?.send) {
+          c1.setText(text);
+          setTimeout(() => c1.send(), 0);
+          return true;
+        }
+        const c2: any = (aui as any)?.thread?.composer;
+        if (c2?.setText && c2?.send) {
+          c2.setText(text);
+          setTimeout(() => c2.send(), 0);
+          return true;
+        }
+        const c3: any = (useAui() as any)?.composer;
+        if (c3?.setText) {
+          c3.setText(text);
+          setTimeout(() => c3.send(), 0);
+          return true;
+        }
+      } catch {}
+      return false;
+    };
+    if (tryComposer()) return;
+    try {
+      const input = document.querySelector("textarea[aria-label='Message input']") as HTMLTextAreaElement | null;
+      if (input) {
+        const nativeSetter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), "value")?.set;
+        nativeSetter?.call(input, text);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.focus();
+        setTimeout(() => {
+          const sendBtn = document.querySelector("button[aria-label='Send message']") as HTMLButtonElement | null;
+          sendBtn?.click();
+          if (!sendBtn) {
+            const e = new KeyboardEvent("keydown", { key: "Enter", code: "Enter", bubbles: true });
+            input.dispatchEvent(e);
+          }
+        }, 50);
+        return;
+      }
+    } catch {}
+    try {
+      const base: any = (typeof window !== "undefined" && (window as any).__MASTRA_BASE_URL) || process.env.NEXT_PUBLIC_MASTRA_BASE_URL || "http://localhost:4111";
+      void base;
+    } catch {}
+  };
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/20 my-2 pointer-events-auto">
+      <p className="text-sm font-medium">{question}</p>
+      {isApproval ? <p className="text-xs text-muted-foreground mt-1">Tool: {toolName} {Object.keys(args).length ? JSON.stringify(args) : ""}</p> : <p className="text-xs text-muted-foreground mt-1">Tool: {toolName} — auto-resume enabled</p>}
+      <div className="mt-2 flex gap-2 pointer-events-auto">
+        <button type="button" style={{ pointerEvents: "auto" }} className="rounded-md bg-black px-3 py-1 text-xs text-white dark:bg-white dark:text-black cursor-pointer pointer-events-auto" onClick={(e) => { e.preventDefault(); e.stopPropagation(); send(true); }}>Approve</button>
+        <button type="button" style={{ pointerEvents: "auto" }} className="rounded-md border px-3 py-1 text-xs cursor-pointer pointer-events-auto" onClick={(e) => { e.preventDefault(); e.stopPropagation(); send(false); }}>Deny</button>
+      </div>
+    </div>
+  );
+};
+
 export type ThreadGroupPart = MessagePrimitive.GroupedParts.GroupPart;
 
 /**
@@ -243,7 +317,7 @@ const ThreadRoot: FC<{ isEmpty: boolean; autoFocus: boolean }> = ({
         ["--thread-max-width" as string]: "56rem",
         ["--composer-bg" as string]: "var(--color-card)",
         ["--composer-radius" as string]: "1.5rem",
-        ["--composer-padding" as string]: "8px",
+        ["--composer-padding" as string]: "9px",
       }}
     >
         <ThreadPrimitive.Viewport
@@ -539,7 +613,7 @@ const Composer: FC<{ autoFocus: boolean }> = ({ autoFocus }) => {
   );
   return (
     <ComposerPrimitive.Unstable_TriggerPopoverRoot>
-      <ComposerPrimitive.Root className="aui-composer-root relative flex w-full flex-col">
+      <ComposerPrimitive.Root className="aui-composer-root relative mx-auto flex w-[80%] flex-col">
         <ComposerPrimitive.AttachmentDropzone
           render={
             <div
@@ -557,7 +631,7 @@ const Composer: FC<{ autoFocus: boolean }> = ({ autoFocus }) => {
           <ComposerQuotePreview />
           <ComposerPrimitive.Input
             placeholder="Send a message... Type / for commands, @ to mention"
-            className="aui-composer-input caret-primary placeholder:text-muted-foreground/60 max-h-48 min-h-10 w-full resize-none bg-transparent px-2.5 py-1 text-base leading-6 outline-none"
+            className="aui-composer-input caret-primary placeholder:text-muted-foreground/60 max-h-[220px] min-h-[46px] w-full resize-none bg-transparent px-2.5 py-1.5 text-base leading-6 outline-none"
             rows={1}
             autoFocus={autoFocus}
             enterKeyHint="send"
@@ -904,8 +978,16 @@ const AssistantMessage: FC = () => {
                           return (
                             part.toolUI ?? <ToolFallbackComponent {...part} />
                           );
-                        case "data":
+                        case "data": {
+                          const anyPart: any = part as any;
+                          const n: string = anyPart.name ?? "";
+                          const d: any = anyPart.data ?? {};
+                          const inner: any = d?.data ?? d;
+                          if (n === "tool-call-suspended" || n === "tool-call-approval" || inner?.suspendPayload || inner?.state === "data-tool-call-suspended" || inner?.state === "data-tool-call-approval") {
+                            return <MastraSuspendFallback part={part as any} />;
+                          }
                           return part.dataRendererUI;
+                        }
                         case "file":
                           return (
                             <div
@@ -1027,8 +1109,16 @@ const AssistantMessage: FC = () => {
                   return <Reasoning {...part} />;
                 case "tool-call":
                   return part.toolUI ?? <ToolFallbackComponent {...part} />;
-                case "data":
+                case "data": {
+                  const anyPart2: any = part as any;
+                  const n2: string = anyPart2.name ?? "";
+                  const d2: any = anyPart2.data ?? {};
+                  const inner2: any = d2?.data ?? d2;
+                  if (n2 === "tool-call-suspended" || n2 === "tool-call-approval" || inner2?.suspendPayload || inner2?.state === "data-tool-call-suspended" || inner2?.state === "data-tool-call-approval") {
+                    return <MastraSuspendFallback part={part as any} />;
+                  }
                   return part.dataRendererUI;
+                }
                 case "file":
                   return (
                     <div

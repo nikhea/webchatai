@@ -35,8 +35,15 @@ export const weatherTool = createTool({
     conditions: z.string(),
     location: z.string(),
   }),
-  execute: async (inputData) => {
-    return await getWeather(inputData.location);
+  suspendSchema: z.object({ question: z.string() }),
+  resumeSchema: z.object({ approved: z.boolean() }),
+  execute: async (inputData, ctx) => {
+    const { resumeData, suspend } = (ctx as any)?.agent ?? {};
+    if (resumeData !== undefined) {
+      if (!resumeData.approved) return { temperature: 0, feelsLike: 0, humidity: 0, windSpeed: 0, windGust: 0, conditions: "Denied by user", location: inputData.location } as any;
+      return await getWeather(inputData.location);
+    }
+    return await (suspend as any)?.({ question: `Approve weather lookup for ${inputData.location}?` }) ?? await getWeather(inputData.location);
   },
 });
 
