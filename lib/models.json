@@ -1,77 +1,1720 @@
 {
   "providers": [
-    { "id": "favorites", "label": "Favorites", "icon": "star" },
-    { "id": "gemini", "label": "Google Gemini", "icon": "gemini" },
-    { "id": "openai", "label": "OpenAI", "icon": "openai" },
-    { "id": "anthropic", "label": "Anthropic (Claude)", "icon": "anthropic" },
-    { "id": "meta", "label": "Meta (Llama)", "icon": "meta" },
-    { "id": "deepseek", "label": "DeepSeek", "icon": "deepseek" },
-    { "id": "mistral", "label": "Mistral AI", "icon": "mistral" },
-    { "id": "xai", "label": "xAI (Grok)", "icon": "xai" },
-    { "id": "perplexity", "label": "Perplexity", "icon": "perplexity" },
-    { "id": "cohere", "label": "Cohere", "icon": "cohere" },
-    { "id": "qwen", "label": "Qwen (Alibaba)", "icon": "qwen" },
-    { "id": "bedrock", "label": "Amazon Bedrock", "icon": "bedrock" },
-    { "id": "together", "label": "Together AI", "icon": "together" },
-    { "id": "groq", "label": "Groq", "icon": "groq" },
-    { "id": "ollama", "label": "Ollama (Local)", "icon": "ollama" },
-    { "id": "databricks", "label": "Databricks", "icon": "databricks" },
-    { "id": "ai21", "label": "AI21 Labs", "icon": "ai21" },
-    { "id": "fireworks", "label": "Fireworks AI", "icon": "fireworks" },
-    { "id": "huggingface", "label": "Hugging Face", "icon": "huggingface" }
+    {
+      "id": "favorites",
+      "label": "Favorites",
+      "icon": "star"
+    },
+    {
+      "id": "openai",
+      "label": "OpenAI",
+      "icon": "openai"
+    },
+    {
+      "id": "anthropic",
+      "label": "Anthropic (Claude)",
+      "icon": "anthropic"
+    },
+    {
+      "id": "gemini",
+      "label": "Google Gemini",
+      "icon": "gemini"
+    },
+    {
+      "id": "meta",
+      "label": "Meta (Llama)",
+      "icon": "meta"
+    },
+    {
+      "id": "deepseek",
+      "label": "DeepSeek",
+      "icon": "deepseek"
+    },
+    {
+      "id": "mistral",
+      "label": "Mistral AI",
+      "icon": "mistral"
+    },
+    {
+      "id": "xai",
+      "label": "xAI (Grok)",
+      "icon": "xai"
+    },
+    {
+      "id": "perplexity",
+      "label": "Perplexity",
+      "icon": "perplexity"
+    },
+    {
+      "id": "groq",
+      "label": "Groq",
+      "icon": "groq"
+    },
+    {
+      "id": "together",
+      "label": "Together AI",
+      "icon": "together"
+    },
+    {
+      "id": "fireworks",
+      "label": "Fireworks AI",
+      "icon": "fireworks"
+    },
+    {
+      "id": "huggingface",
+      "label": "Hugging Face",
+      "icon": "huggingface"
+    },
+    {
+      "id": "cerebras",
+      "label": "Cerebras",
+      "icon": "cerebras"
+    },
+    {
+      "id": "cloudflare",
+      "label": "Cloudflare Workers AI",
+      "icon": "cloudflare"
+    },
+    {
+      "id": "moonshot",
+      "label": "Moonshot AI",
+      "icon": "moonshot"
+    },
+    {
+      "id": "zai",
+      "label": "Z.AI",
+      "icon": "zai"
+    },
+    {
+      "id": "siliconflow",
+      "label": "SiliconFlow",
+      "icon": "siliconflow"
+    },
+    {
+      "id": "upstage",
+      "label": "Upstage",
+      "icon": "upstage"
+    },
+    {
+      "id": "openrouter",
+      "label": "OpenRouter",
+      "icon": "openrouter"
+    },
+    {
+      "id": "deepinfra",
+      "label": "DeepInfra",
+      "icon": "deepinfra"
+    },
+    {
+      "id": "ollama",
+      "label": "Ollama Cloud",
+      "icon": "ollama"
+    }
   ],
   "modelData": {
     "favorites": {
       "models": [
-        { "name": "Gemini 3 Flash", "price": "$··", "favorited": true, "dim": false, "caps": ["vision", "reasoning", "tool"], "desc": "Lightning-fast with surprising capability", "hidden": false },
-        { "name": "Gemini 3.5 Flash-Lite", "price": "$··", "favorited": true, "dim": false, "caps": ["vision", "tool", "fast"], "desc": "Efficient agentic model for high-volume workloads", "hidden": false }
+        {
+          "name": "Gemini 3 Flash",
+          "price": "$\u00b7\u00b7",
+          "favorited": true,
+          "dim": false,
+          "caps": [
+            "vision",
+            "reasoning",
+            "tool"
+          ],
+          "desc": "Lightning-fast with surprising capability",
+          "hidden": false
+        },
+        {
+          "name": "Gemini 3.5 Flash-Lite",
+          "price": "$\u00b7\u00b7",
+          "favorited": true,
+          "dim": false,
+          "caps": [
+            "vision",
+            "tool",
+            "fast"
+          ],
+          "desc": "Efficient agentic model for high-volume workloads",
+          "hidden": false
+        }
+      ],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "openai": {
+      "models": [
+        {
+          "name": "chatgpt-image-latest",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "vision"
+          ],
+          "desc": "chatgpt-image-latest via OpenAI",
+          "hidden": false
+        },
+        {
+          "name": "gpt-3.5-turbo",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "gpt-3.5-turbo via OpenAI",
+          "hidden": false
+        },
+        {
+          "name": "gpt-4",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "gpt-4 via OpenAI",
+          "hidden": false
+        },
+        {
+          "name": "gpt-4-turbo",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "gpt-4-turbo via OpenAI",
+          "hidden": false
+        },
+        {
+          "name": "gpt-4.1",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "gpt-4.1 via OpenAI",
+          "hidden": false
+        }
+      ],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "anthropic": {
+      "models": [
+        {
+          "name": "claude-fable-5",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "claude-fable-5 via Anthropic (Claude)",
+          "hidden": false
+        },
+        {
+          "name": "claude-fable-5-1",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "claude-fable-5-1 via Anthropic (Claude)",
+          "hidden": false
+        },
+        {
+          "name": "claude-haiku-4-5",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "claude-haiku-4-5 via Anthropic (Claude)",
+          "hidden": false
+        },
+        {
+          "name": "claude-haiku-4-5-20251001",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "claude-haiku-4-5-20251001 via Anthropic (Claude)",
+          "hidden": false
+        },
+        {
+          "name": "claude-opus-4-5",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "claude-opus-4-5 via Anthropic (Claude)",
+          "hidden": false
+        }
       ],
       "legacy": [],
       "legacyLabel": null
     },
     "gemini": {
       "models": [
-        { "name": "Gemini 3 Flash", "price": "$··", "favorited": true, "dim": false, "caps": ["vision", "reasoning", "tool"], "desc": "Lightning-fast with surprising capability", "hidden": false },
-        { "name": "Gemini 3.7 Flash", "price": "$··", "favorited": false, "dim": true, "caps": ["vision", "reasoning"], "desc": "Fast multimodal reasoning for agentic workflows", "hidden": false },
-        { "name": "Gemini 3.6 Flash", "price": "$$·", "favorited": false, "dim": true, "caps": ["reasoning", "tool"], "desc": "Efficient reasoning for coding and agentic workflows", "hidden": false },
-        { "name": "Gemini 3.5 Flash-Lite", "price": "$··", "favorited": false, "dim": false, "caps": ["vision", "tool", "fast"], "desc": "Efficient agentic model for high-volume workloads", "hidden": false },
-        { "name": "Gemini 3.5 Flash", "price": "$$·", "favorited": false, "dim": true, "caps": ["vision", "fast"], "desc": "Next-gen Flash speed with stronger quality per token", "hidden": false },
-        { "name": "Gemma 4 26B A4B", "price": null, "favorited": false, "dim": false, "caps": ["vision", "reasoning"], "desc": "Efficient multimodal Google MoE with optional thinking", "hidden": false },
-        { "name": "Gemini 3.1 Flash Lite", "price": "$··", "favorited": false, "dim": true, "caps": ["fast"], "desc": "Lightweight Flash variant for cost-sensitive workloads", "hidden": false }
+        {
+          "name": "deep-research-max-preview-04-2026",
+          "price": null,
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "deep-research-max-preview-04-2026 via Google Gemini",
+          "hidden": false
+        },
+        {
+          "name": "deep-research-preview-04-2026",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "deep-research-preview-04-2026 via Google Gemini",
+          "hidden": false
+        },
+        {
+          "name": "gemini-2.5-computer-use-preview-10-2025",
+          "price": null,
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "fast"
+          ],
+          "desc": "gemini-2.5-computer-use-preview-10-2025 via Google Gemini",
+          "hidden": false
+        },
+        {
+          "name": "gemini-2.5-flash",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "fast"
+          ],
+          "desc": "gemini-2.5-flash via Google Gemini",
+          "hidden": false
+        },
+        {
+          "name": "gemini-2.5-flash-image",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "vision",
+            "tool",
+            "fast"
+          ],
+          "desc": "gemini-2.5-flash-image via Google Gemini",
+          "hidden": false
+        }
       ],
-      "legacy": ["Gemini 2.5 Flash", "Gemini 2.0 Flash"],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "meta": {
+      "models": [
+        {
+          "name": "Llama 4 Maverick",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "Meta Llama 4 Maverick open multimodal model",
+          "hidden": false
+        },
+        {
+          "name": "Llama 4 Scout",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "Meta Llama 4 Scout open multimodal model",
+          "hidden": false
+        },
+        {
+          "name": "Llama 3.3 70B Instruct",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool"
+          ],
+          "desc": "Meta Llama 3.3 70B Instruct open multimodal model",
+          "hidden": false
+        },
+        {
+          "name": "Llama 3.1 405B Instruct",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool"
+          ],
+          "desc": "Meta Llama 3.1 405B Instruct open multimodal model",
+          "hidden": false
+        },
+        {
+          "name": "Llama 3.2 11B Vision",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "vision"
+          ],
+          "desc": "Meta Llama 3.2 11B Vision open multimodal model",
+          "hidden": false
+        }
+      ],
+      "legacy": [
+        "Llama 3.1 8B",
+        "Llama 3 70B"
+      ],
       "legacyLabel": "2 legacy models"
-    },
-    "openai": {
-      "models": [
-        { "name": "GPT-5.2", "price": "$$$+", "favorited": false, "dim": false, "caps": ["reasoning", "tool", "vision"], "desc": "OpenAI general-purpose flagship model", "hidden": false },
-        { "name": "GPT-5.2 mini", "price": "$$·", "favorited": false, "dim": true, "caps": ["fast", "tool"], "desc": "Smaller GPT-5.2 tuned for speed and low cost", "hidden": false },
-        { "name": "GPT Image Gen 3", "price": "$$$+", "favorited": false, "dim": false, "caps": ["image"], "desc": "OpenAI image generation model", "hidden": false },
-        { "name": "GPT-5.1 Turbo", "price": "$$·", "favorited": false, "dim": true, "caps": ["reasoning", "vision"], "desc": "Balanced reasoning and multimodal input", "hidden": false }
-      ],
-      "legacy": ["GPT-4o", "GPT-4 Turbo", "GPT-3.5 Turbo"],
-      "legacyLabel": "3 legacy models"
-    },
-    "anthropic": {
-      "models": [
-        { "name": "Claude Opus 5", "price": "$$$+", "favorited": true, "dim": false, "caps": ["reasoning", "vision", "tool", "pdf"], "desc": "Anthropic's most capable model", "hidden": false },
-        { "name": "Claude Sonnet 5", "price": "$$·", "favorited": false, "dim": false, "caps": ["reasoning", "vision", "tool", "pdf"], "desc": "Balanced performance for everyday tasks", "hidden": false },
-        { "name": "Claude Haiku 4.5", "price": "$·", "favorited": false, "dim": false, "caps": ["fast", "tool"], "desc": "Fastest Claude model for high-volume use", "hidden": false },
-        { "name": "Claude Fable 5", "price": "$$$·", "favorited": false, "dim": true, "caps": ["reasoning", "vision"], "desc": "Mythos-tier model with added safety measures", "hidden": false }
-      ],
-      "legacy": ["Claude 3.7 Sonnet", "Claude 3.5 Sonnet", "Claude 3 Opus"],
-      "legacyLabel": "3 legacy models"
     },
     "deepseek": {
       "models": [
-        { "name": "DeepSeek v4 Pro (0813)", "price": "$$·", "favorited": false, "dim": false, "caps": ["reasoning"], "desc": "General-availability DeepSeek V4 Pro release", "hidden": false },
-        { "name": "DeepSeek v4 Flash (0731)", "price": null, "favorited": false, "dim": true, "caps": ["reasoning"], "desc": "Re-post-trained DeepSeek V4 Flash", "hidden": false },
-        { "name": "DeepSeek v4 Flash", "price": null, "favorited": false, "dim": true, "caps": ["reasoning"], "desc": "Fast, cost-efficient DeepSeek V4 model", "hidden": false },
-        { "name": "DeepSeek v4 Pro", "price": "$$·", "favorited": false, "dim": false, "caps": ["reasoning"], "desc": "DeepSeek's flagship V4 reasoning model", "hidden": false },
-        { "name": "DeepSeek v3.2", "price": null, "favorited": false, "dim": true, "caps": ["reasoning"], "desc": "Sparse attention for efficient long-context work", "hidden": false }
+        {
+          "name": "deepseek-v4-flash",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "fast"
+          ],
+          "desc": "deepseek-v4-flash via DeepSeek",
+          "hidden": false
+        },
+        {
+          "name": "deepseek-v4-flash-vision-exp",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "vision",
+            "tool",
+            "fast"
+          ],
+          "desc": "deepseek-v4-flash-vision-exp via DeepSeek",
+          "hidden": false
+        },
+        {
+          "name": "deepseek-v4-pro",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "deepseek-v4-pro via DeepSeek",
+          "hidden": false
+        }
       ],
-      "legacy": ["DeepSeek v3", "DeepSeek v3 Base", "DeepSeek Coder v2", "DeepSeek v2.5"],
-      "legacyLabel": "4 legacy models"
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "mistral": {
+      "models": [
+        {
+          "name": "codestral-latest",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "codestral-latest via Mistral AI",
+          "hidden": false
+        },
+        {
+          "name": "devstral-2512",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "devstral-2512 via Mistral AI",
+          "hidden": false
+        },
+        {
+          "name": "devstral-latest",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "devstral-latest via Mistral AI",
+          "hidden": false
+        },
+        {
+          "name": "devstral-medium-2507",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "devstral-medium-2507 via Mistral AI",
+          "hidden": false
+        },
+        {
+          "name": "devstral-medium-latest",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "devstral-medium-latest via Mistral AI",
+          "hidden": false
+        }
+      ],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "xai": {
+      "models": [
+        {
+          "name": "grok-4.20-0309-non-reasoning",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "reasoning"
+          ],
+          "desc": "grok-4.20-0309-non-reasoning via xAI (Grok)",
+          "hidden": false
+        },
+        {
+          "name": "grok-4.20-0309-reasoning",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "reasoning"
+          ],
+          "desc": "grok-4.20-0309-reasoning via xAI (Grok)",
+          "hidden": false
+        },
+        {
+          "name": "grok-4.20-multi-agent-0309",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "grok-4.20-multi-agent-0309 via xAI (Grok)",
+          "hidden": false
+        },
+        {
+          "name": "grok-4.3",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "grok-4.3 via xAI (Grok)",
+          "hidden": false
+        },
+        {
+          "name": "grok-4.5",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "grok-4.5 via xAI (Grok)",
+          "hidden": false
+        }
+      ],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "perplexity": {
+      "models": [
+        {
+          "name": "sonar",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "sonar via Perplexity",
+          "hidden": false
+        },
+        {
+          "name": "sonar-deep-research",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "sonar-deep-research via Perplexity",
+          "hidden": false
+        },
+        {
+          "name": "sonar-pro",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "sonar-pro via Perplexity",
+          "hidden": false
+        },
+        {
+          "name": "sonar-reasoning-pro",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "reasoning"
+          ],
+          "desc": "sonar-reasoning-pro via Perplexity",
+          "hidden": false
+        }
+      ],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "groq": {
+      "models": [
+        {
+          "name": "allam-2-7b",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "fast"
+          ],
+          "desc": "allam-2-7b via Groq",
+          "hidden": false
+        },
+        {
+          "name": "canopylabs/orpheus-arabic-saudi",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "canopylabs/orpheus-arabic-saudi via Groq",
+          "hidden": false
+        },
+        {
+          "name": "canopylabs/orpheus-v1-english",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "canopylabs/orpheus-v1-english via Groq",
+          "hidden": false
+        },
+        {
+          "name": "groq/compound",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool"
+          ],
+          "desc": "groq/compound via Groq",
+          "hidden": false
+        },
+        {
+          "name": "groq/compound-mini",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "fast"
+          ],
+          "desc": "groq/compound-mini via Groq",
+          "hidden": false
+        },
+        {
+          "name": "llama-3.1-8b-instant",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "fast"
+          ],
+          "desc": "llama-3.1-8b-instant via Groq",
+          "hidden": false
+        },
+        {
+          "name": "llama-3.3-70b-versatile",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "llama-3.3-70b-versatile via Groq",
+          "hidden": false
+        },
+        {
+          "name": "meta-llama/llama-prompt-guard-2-22m",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "meta-llama/llama-prompt-guard-2-22m via Groq",
+          "hidden": false
+        },
+        {
+          "name": "meta-llama/llama-prompt-guard-2-86m",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "meta-llama/llama-prompt-guard-2-86m via Groq",
+          "hidden": false
+        },
+        {
+          "name": "openai/gpt-oss-120b",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "fast"
+          ],
+          "desc": "openai/gpt-oss-120b via Groq",
+          "hidden": false
+        },
+        {
+          "name": "openai/gpt-oss-20b",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "fast"
+          ],
+          "desc": "openai/gpt-oss-20b via Groq",
+          "hidden": false
+        },
+        {
+          "name": "openai/gpt-oss-safeguard-20b",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "fast"
+          ],
+          "desc": "openai/gpt-oss-safeguard-20b via Groq",
+          "hidden": false
+        },
+        {
+          "name": "qwen/qwen3.6-27b",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "fast"
+          ],
+          "desc": "qwen/qwen3.6-27b via Groq",
+          "hidden": false
+        },
+        {
+          "name": "qwen/qwen3.8-27b",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "fast"
+          ],
+          "desc": "qwen/qwen3.8-27b via Groq",
+          "hidden": false
+        }
+      ],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "together": {
+      "models": [
+        {
+          "name": "LFM2-24B-A2B",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "LFM2-24B-A2B via Together AI",
+          "hidden": false
+        },
+        {
+          "name": "MiniMax-M2.5",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "fast"
+          ],
+          "desc": "MiniMax-M2.5 via Together AI",
+          "hidden": false
+        },
+        {
+          "name": "MiniMax-M2.7",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "fast"
+          ],
+          "desc": "MiniMax-M2.7 via Together AI",
+          "hidden": false
+        },
+        {
+          "name": "MiniMax-M3",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "fast"
+          ],
+          "desc": "MiniMax-M3 via Together AI",
+          "hidden": false
+        },
+        {
+          "name": "Qwen2.5-7B-Instruct-Turbo",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool"
+          ],
+          "desc": "Qwen2.5-7B-Instruct-Turbo via Together AI",
+          "hidden": false
+        }
+      ],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "fireworks": {
+      "models": [
+        {
+          "name": "deepseek-v4-flash-0731",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "fast"
+          ],
+          "desc": "deepseek-v4-flash-0731 via Fireworks AI",
+          "hidden": false
+        },
+        {
+          "name": "deepseek-v4-flash-vision-exp",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "vision",
+            "tool",
+            "fast"
+          ],
+          "desc": "deepseek-v4-flash-vision-exp via Fireworks AI",
+          "hidden": false
+        },
+        {
+          "name": "deepseek-v4-pro-0813",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "deepseek-v4-pro-0813 via Fireworks AI",
+          "hidden": false
+        },
+        {
+          "name": "glm-5p2",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "glm-5p2 via Fireworks AI",
+          "hidden": false
+        },
+        {
+          "name": "glm-5p3",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "glm-5p3 via Fireworks AI",
+          "hidden": false
+        }
+      ],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "huggingface": {
+      "models": [
+        {
+          "name": "MiniMax-M2",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "fast"
+          ],
+          "desc": "MiniMax-M2 via Hugging Face",
+          "hidden": false
+        },
+        {
+          "name": "MiniMax-M2.1",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "fast"
+          ],
+          "desc": "MiniMax-M2.1 via Hugging Face",
+          "hidden": false
+        },
+        {
+          "name": "MiniMax-M2.5",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "fast"
+          ],
+          "desc": "MiniMax-M2.5 via Hugging Face",
+          "hidden": false
+        },
+        {
+          "name": "MiniMax-M2.7",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "fast"
+          ],
+          "desc": "MiniMax-M2.7 via Hugging Face",
+          "hidden": false
+        },
+        {
+          "name": "MiniMax-M3",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "fast"
+          ],
+          "desc": "MiniMax-M3 via Hugging Face",
+          "hidden": false
+        }
+      ],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "cerebras": {
+      "models": [
+        {
+          "name": "gemma-4-31b",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "gemma-4-31b via Cerebras",
+          "hidden": false
+        },
+        {
+          "name": "gpt-oss-120b",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "gpt-oss-120b via Cerebras",
+          "hidden": false
+        }
+      ],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "cloudflare": {
+      "models": [
+        {
+          "name": "gemma-sea-lion-v4-27b-it",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "gemma-sea-lion-v4-27b-it via Cloudflare Workers AI",
+          "hidden": false
+        },
+        {
+          "name": "deepseek-r1-distill-qwen-32b",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "reasoning"
+          ],
+          "desc": "deepseek-r1-distill-qwen-32b via Cloudflare Workers AI",
+          "hidden": false
+        },
+        {
+          "name": "deepseek-v4-flash-0731",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "fast"
+          ],
+          "desc": "deepseek-v4-flash-0731 via Cloudflare Workers AI",
+          "hidden": false
+        },
+        {
+          "name": "deepseek-v4-pro-0813",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "deepseek-v4-pro-0813 via Cloudflare Workers AI",
+          "hidden": false
+        },
+        {
+          "name": "gemma-4-26b-a4b-it",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "gemma-4-26b-a4b-it via Cloudflare Workers AI",
+          "hidden": false
+        }
+      ],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "moonshot": {
+      "models": [
+        {
+          "name": "kimi-k2-0711-preview",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "kimi-k2-0711-preview via Moonshot AI",
+          "hidden": false
+        },
+        {
+          "name": "kimi-k2-0905-preview",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "kimi-k2-0905-preview via Moonshot AI",
+          "hidden": false
+        },
+        {
+          "name": "kimi-k2-thinking",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "reasoning"
+          ],
+          "desc": "kimi-k2-thinking via Moonshot AI",
+          "hidden": false
+        },
+        {
+          "name": "kimi-k2-thinking-turbo",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "reasoning"
+          ],
+          "desc": "kimi-k2-thinking-turbo via Moonshot AI",
+          "hidden": false
+        },
+        {
+          "name": "kimi-k2-turbo-preview",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "kimi-k2-turbo-preview via Moonshot AI",
+          "hidden": false
+        }
+      ],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "zai": {
+      "models": [
+        {
+          "name": "glm-4.5",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "glm-4.5 via Z.AI",
+          "hidden": false
+        },
+        {
+          "name": "glm-4.5-air",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "glm-4.5-air via Z.AI",
+          "hidden": false
+        },
+        {
+          "name": "glm-4.5-flash",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "fast"
+          ],
+          "desc": "glm-4.5-flash via Z.AI",
+          "hidden": false
+        },
+        {
+          "name": "glm-4.5v",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "glm-4.5v via Z.AI",
+          "hidden": false
+        },
+        {
+          "name": "glm-4.6",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "glm-4.6 via Z.AI",
+          "hidden": false
+        }
+      ],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "siliconflow": {
+      "models": [
+        {
+          "name": "Seed-OSS-36B-Instruct",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool"
+          ],
+          "desc": "Seed-OSS-36B-Instruct via SiliconFlow",
+          "hidden": false
+        },
+        {
+          "name": "MiniMax-M2.5",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "fast"
+          ],
+          "desc": "MiniMax-M2.5 via SiliconFlow",
+          "hidden": false
+        },
+        {
+          "name": "Qwen2.5-72B-Instruct",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool"
+          ],
+          "desc": "Qwen2.5-72B-Instruct via SiliconFlow",
+          "hidden": false
+        },
+        {
+          "name": "Qwen2.5-7B-Instruct",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool"
+          ],
+          "desc": "Qwen2.5-7B-Instruct via SiliconFlow",
+          "hidden": false
+        },
+        {
+          "name": "Qwen3-14B",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "Qwen3-14B via SiliconFlow",
+          "hidden": false
+        }
+      ],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "upstage": {
+      "models": [
+        {
+          "name": "solar-mini",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "fast"
+          ],
+          "desc": "solar-mini via Upstage",
+          "hidden": false
+        },
+        {
+          "name": "solar-pro2",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "solar-pro2 via Upstage",
+          "hidden": false
+        },
+        {
+          "name": "solar-pro3",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "reasoning"
+          ],
+          "desc": "solar-pro3 via Upstage",
+          "hidden": false
+        },
+        {
+          "name": "solar-pro4",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "solar-pro4 via Upstage",
+          "hidden": false
+        }
+      ],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "openrouter": {
+      "models": [
+        {
+          "name": "aion-2.0",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "aion-2.0 via OpenRouter",
+          "hidden": false
+        },
+        {
+          "name": "aion-3.0",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "aion-3.0 via OpenRouter",
+          "hidden": false
+        },
+        {
+          "name": "aion-3.0-mini",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "fast"
+          ],
+          "desc": "aion-3.0-mini via OpenRouter",
+          "hidden": false
+        },
+        {
+          "name": "aion-rp-llama-3.1-8b",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "aion-rp-llama-3.1-8b via OpenRouter",
+          "hidden": false
+        },
+        {
+          "name": "nova-2-lite-v1",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "fast"
+          ],
+          "desc": "nova-2-lite-v1 via OpenRouter",
+          "hidden": false
+        }
+      ],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "deepinfra": {
+      "models": [
+        {
+          "name": "Seed-2.0-code",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "Seed-2.0-code via DeepInfra",
+          "hidden": false
+        },
+        {
+          "name": "Seed-2.0-mini",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "fast"
+          ],
+          "desc": "Seed-2.0-mini via DeepInfra",
+          "hidden": false
+        },
+        {
+          "name": "Seed-2.0-pro",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "Seed-2.0-pro via DeepInfra",
+          "hidden": false
+        },
+        {
+          "name": "MiniMax-M2.5",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "fast"
+          ],
+          "desc": "MiniMax-M2.5 via DeepInfra",
+          "hidden": false
+        },
+        {
+          "name": "MiniMax-M2.7",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "fast"
+          ],
+          "desc": "MiniMax-M2.7 via DeepInfra",
+          "hidden": false
+        }
+      ],
+      "legacy": [],
+      "legacyLabel": null
+    },
+    "ollama": {
+      "models": [
+        {
+          "name": "deepseek-v4-flash",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "fast"
+          ],
+          "desc": "deepseek-v4-flash via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "deepseek-v4-flash:0731",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "fast"
+          ],
+          "desc": "deepseek-v4-flash:0731 via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "deepseek-v4-pro",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "reasoning",
+            "tool"
+          ],
+          "desc": "deepseek-v4-pro via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "gemma4:31b",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "tool"
+          ],
+          "desc": "gemma4:31b via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "glm-5.1",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": false,
+          "caps": [
+            "reasoning",
+            "tool"
+          ],
+          "desc": "glm-5.1 via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "glm-5.2",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "reasoning",
+            "tool"
+          ],
+          "desc": "glm-5.2 via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "glm-5.3",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "reasoning",
+            "tool"
+          ],
+          "desc": "glm-5.3 via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "glm-5.3-flash",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "fast"
+          ],
+          "desc": "glm-5.3-flash via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "gpt-oss:120b",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "fast"
+          ],
+          "desc": "gpt-oss:120b via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "gpt-oss:20b",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "fast"
+          ],
+          "desc": "gpt-oss:20b via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "kimi-k2.5",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "reasoning",
+            "tool"
+          ],
+          "desc": "kimi-k2.5 via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "kimi-k2.6",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "reasoning",
+            "tool"
+          ],
+          "desc": "kimi-k2.6 via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "kimi-k2.7-code",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "reasoning",
+            "tool"
+          ],
+          "desc": "kimi-k2.7-code via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "kimi-k3",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "reasoning",
+            "tool"
+          ],
+          "desc": "kimi-k3 via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "minimax-m2.5",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "fast"
+          ],
+          "desc": "minimax-m2.5 via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "minimax-m2.7",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "fast"
+          ],
+          "desc": "minimax-m2.7 via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "minimax-m3",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "fast"
+          ],
+          "desc": "minimax-m3 via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "mistral-large-3:675b",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "mistral-large-3:675b via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "nemotron-3-nano:30b",
+          "price": "$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "nemotron-3-nano:30b via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "nemotron-3-super",
+          "price": "$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "nemotron-3-super via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "nemotron-3-ultra",
+          "price": "$$$\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "tool",
+            "reasoning"
+          ],
+          "desc": "nemotron-3-ultra via Ollama Cloud",
+          "hidden": false
+        },
+        {
+          "name": "qwen3.5:397b",
+          "price": "$\u00b7\u00b7",
+          "favorited": false,
+          "dim": true,
+          "caps": [
+            "reasoning",
+            "tool"
+          ],
+          "desc": "qwen3.5:397b via Ollama Cloud",
+          "hidden": false
+        }
+      ],
+      "legacy": [],
+      "legacyLabel": null
     }
   }
 }

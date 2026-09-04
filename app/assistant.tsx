@@ -131,6 +131,9 @@ export const Assistant = ({
                 resource: RESOURCE_ID_KEY,
               },
               modelName: composerState.modelName,
+              providerId: (composerState as any).providerId,
+              providerName: (composerState as any).providerName,
+              provider: (composerState as any).providerId,
               webSearchEnabled: composerState.webSearchEnabled,
             };
           },

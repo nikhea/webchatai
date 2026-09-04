@@ -653,10 +653,14 @@ const Composer: FC<{ autoFocus: boolean }> = ({ autoFocus }) => {
 const ComposerModelPicker: FC = () => {
   const aui = useAui();
   const [selected, setSelected] = useState("Gemini 3 Flash");
+  const [providerId, setProviderId] = useState("gemini");
+  const [providerName, setProviderName] = useState("Google Gemini");
   const [open, setOpen] = useState(false);
   useEffect(() => {
     composerState.modelName = selected;
-  }, [selected]);
+    composerState.providerId = providerId;
+    composerState.providerName = providerName;
+  }, [selected, providerId, providerName]);
   useEffect(() => {
     const handler = () => setOpen((v) => !v);
     window.addEventListener("toggle-model-picker", handler);
@@ -664,9 +668,9 @@ const ComposerModelPicker: FC = () => {
   }, []);
   useEffect(() => {
     return aui.modelContext.register({
-      getModelContext: () => ({ config: { modelName: selected } }),
+      getModelContext: () => ({ config: { modelName: selected, providerId, providerName } }),
     });
-  }, [aui, selected]);
+  }, [aui, selected, providerId, providerName]);
   return (
     <div className="relative">
       <ComposerModelTrigger model={selected} open={open} onClick={() => setOpen((v) => !v)} />
@@ -674,8 +678,10 @@ const ComposerModelPicker: FC = () => {
         open={open}
         onClose={() => setOpen(false)}
         selectedName={selected}
-        onSelect={(name) => {
+        onSelect={(name, pid, pname) => {
           setSelected(name);
+          setProviderId(pid);
+          setProviderName(pname);
           setOpen(false);
         }}
       />

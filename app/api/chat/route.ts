@@ -11,18 +11,26 @@ export async function POST(req: Request) {
     config,
     callSettings,
     modelName: bodyModelName,
+    providerId: bodyProviderId,
+    providerName: bodyProviderName,
+    provider: bodyProvider,
     webSearchEnabled: bodyWebSearch,
   }: {
     messages: UIMessage[];
     system?: string;
     tools?: Record<string, { description?: string; parameters: JSONSchema7 }>;
-    config?: { modelName?: string; webSearchEnabled?: boolean };
+    config?: { modelName?: string; providerId?: string; providerName?: string; provider?: string; webSearchEnabled?: boolean };
     callSettings?: Record<string, unknown>;
     modelName?: string;
+    providerId?: string;
+    providerName?: string;
+    provider?: string;
     webSearchEnabled?: boolean;
   } = await req.json();
 
   const modelName = config?.modelName ?? bodyModelName ?? (callSettings as any)?.modelName ?? "gpt-5.6-luna";
+  const providerId = config?.providerId ?? (config as any)?.provider ?? bodyProviderId ?? bodyProvider ?? (callSettings as any)?.providerId ?? (callSettings as any)?.provider ?? "openai";
+  const providerName = config?.providerName ?? bodyProviderName ?? (callSettings as any)?.providerName ?? providerId;
   const webSearchEnabled = config?.webSearchEnabled ?? bodyWebSearch ?? (callSettings as any)?.webSearchEnabled ?? false;
 
   let finalSystem = system;

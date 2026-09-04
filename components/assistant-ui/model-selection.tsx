@@ -40,6 +40,15 @@ const PROVIDER_SLUGS: Record<string, string> = {
   ai21: "ai21",
   fireworks: "fireworks",
   huggingface: "huggingface",
+  cerebras: "cerebras",
+  cloudflare: "cloudflare",
+  moonshot: "moonshot",
+  zai: "zai",
+  siliconflow: "siliconflow",
+  upstage: "upstage",
+  openrouter: "openrouter",
+  deepinfra: "deepinfra",
+  openai: "openai",
 };
 
 function OpenAIIcon({ active }: { active: boolean }) {
@@ -80,7 +89,7 @@ export function ModelSelectionPopup({
 }: {
   open: boolean;
   onClose: () => void;
-  onSelect: (name: string) => void;
+  onSelect: (name: string, providerId: string, providerName: string) => void;
   selectedName?: string;
 }) {
   const [active, setActive] = useState("favorites");
@@ -216,7 +225,21 @@ export function ModelSelectionPopup({
                 return (
                   <div
                     key={m.name}
-                    onClick={() => onSelect(m.name)}
+                    onClick={() => {
+                      const prov = PROVIDERS.find((p) => p.id === active);
+                      let pid = prov?.id ?? active;
+                      let pname = prov?.label ?? active;
+                      if (active === "favorites") {
+                        for (const [k, v] of Object.entries(MODEL_DATA)) {
+                          if (k === "favorites") continue;
+                          if (v.models.some((x) => x.name === m.name)) {
+                            const fp = PROVIDERS.find((p) => p.id === k);
+                            if (fp) { pid = fp.id; pname = fp.label; break; }
+                          }
+                        }
+                      }
+                      onSelect(m.name, pid, pname);
+                    }}
                     className={cn("group flex flex-col gap-1 cursor-pointer rounded-lg px-2 py-1 -mx-2", isSelected && "bg-white/5", m.dim && "opacity-80")}
                   >
                     <div className="flex justify-between items-center">
