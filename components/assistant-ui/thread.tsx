@@ -103,7 +103,7 @@ import {
   type PropsWithChildren,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { composerState } from "@/lib/composer-state";
+import { useComposerStore } from "@/lib/composer-state";
 
 const MastraSuspendFallback: FC<{ part: any }> = ({ part }) => {
   const anyPart: any = part as any;
@@ -652,15 +652,8 @@ const Composer: FC<{ autoFocus: boolean }> = ({ autoFocus }) => {
 
 const ComposerModelPicker: FC = () => {
   const aui = useAui();
-  const [selected, setSelected] = useState("Gemini 3 Flash");
-  const [providerId, setProviderId] = useState("gemini");
-  const [providerName, setProviderName] = useState("Google Gemini");
+  const { modelName: selected, providerId, providerName, setModel } = useComposerStore();
   const [open, setOpen] = useState(false);
-  useEffect(() => {
-    composerState.modelName = selected;
-    composerState.providerId = providerId;
-    composerState.providerName = providerName;
-  }, [selected, providerId, providerName]);
   useEffect(() => {
     const handler = () => setOpen((v) => !v);
     window.addEventListener("toggle-model-picker", handler);
@@ -679,9 +672,7 @@ const ComposerModelPicker: FC = () => {
         onClose={() => setOpen(false)}
         selectedName={selected}
         onSelect={(name, pid, pname) => {
-          setSelected(name);
-          setProviderId(pid);
-          setProviderName(pname);
+          setModel(name, pid, pname);
           setOpen(false);
         }}
       />
@@ -691,10 +682,7 @@ const ComposerModelPicker: FC = () => {
 
 const ComposerWebSearchToggle: FC = () => {
   const aui = useAui();
-  const [enabled, setEnabled] = useState(false);
-  useEffect(() => {
-    composerState.webSearchEnabled = enabled;
-  }, [enabled]);
+  const { webSearchEnabled: enabled, setWebSearchEnabled: setEnabled } = useComposerStore();
   useEffect(() => {
     return aui.modelContext.register({
       getModelContext: () => ({ config: { webSearchEnabled: enabled } as unknown as Record<string, unknown> }),
@@ -706,7 +694,7 @@ const ComposerWebSearchToggle: FC = () => {
       variant={enabled ? "default" : "ghost"}
       size="icon"
       className={cn("size-7 rounded-full", enabled && "bg-primary text-primary-foreground")}
-      onClick={() => setEnabled((v) => !v)}
+      onClick={() => setEnabled(!enabled)}
       aria-pressed={enabled}
       aria-label="Toggle web search"
     >

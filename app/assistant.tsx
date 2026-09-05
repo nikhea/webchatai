@@ -14,6 +14,7 @@ import { KokoroFastAPIAdapter } from "@/lib/kokoro-fastapi-adapter";
 import {
   useChatRuntime,
   AssistantChatTransport,
+  createResumableSessionStorage,
 } from "@assistant-ui/react-ai-sdk";
 import { lastAssistantMessageIsCompleteWithApprovalResponses } from "ai";
 import { Thread } from "@/components/assistant-ui/thread";
@@ -29,7 +30,7 @@ import { createMastraThreadListAdapter } from "./assistant/thread-list-adapter";
 import { RESOURCE_ID_KEY, AGENT_ID, deleteThread } from "@/lib/mastra/memory-queries";
 import { attachmentAdapter } from "@/lib/attachment-adapter";
 import { HotkeysProvider, useHotkey } from "@tanstack/react-hotkeys";
-import { composerState } from "@/lib/composer-state";
+import { useComposerStore } from "@/lib/composer-state";
 import { useHotkeysStore, keysToHotkey } from "@/lib/hotkeys-store";
 
 export const Assistant = ({
@@ -97,9 +98,46 @@ export const Assistant = ({
     }
   }, []);
 
+  useEffect(() => {
+    const suppress = (e: any) => {
+      const msg = String(e?.message ?? e?.reason?.message ?? e?.reason ?? "");
+      if (msg.includes("no resumable stream id")) {
+        e.preventDefault?.();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+        return true;
+      }
+    };
+    window.addEventListener("error", suppress as any);
+    window.addEventListener("unhandledrejection", suppress as any);
+    return () => {
+      window.removeEventListener("error", suppress as any);
+      window.removeEventListener("unhandledrejection", suppress as any);
+    };
+  }, []);
+
   const runtimeHook = useCallback(
-    () =>
-      useChatRuntime({
+    () => {
+      const aui = useAui();
+      const durableStorage = createResumableSessionStorage({
+        key: () => {
+          const tid = currentThreadIdRef.current;
+          if (tid && !tid.startsWith("__LOCALID_")) return `aui-resumable:${tid}`;
+          try {
+            const s: any = aui.threadListItem.getState();
+            const fallback = s.remoteId ?? s.id;
+            if (fallback && !String(fallback).startsWith("__LOCALID_")) return `aui-resumable:${fallback}`;
+            return tid ? `aui-resumable:${tid}` : undefined;
+          } catch {
+            return tid ? `aui-resumable:${tid}` : undefined;
+          }
+        },
+      });
+      const baseUrl =
+        process.env.NEXT_PUBLIC_MASTRA_BASE_URL ??
+        process.env.MASTRA_BASE_URL ??
+        "http://localhost:4111";
+
+      return useChatRuntime({
         adapters: {
           speech: speechAdapter,
           dictation: dictationAdapter,
@@ -107,7 +145,35 @@ export const Assistant = ({
         },
         sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
         transport: new AssistantChatTransport({
-          api: `${process.env.NEXT_PUBLIC_MASTRA_BASE_URL ?? process.env.MASTRA_BASE_URL ?? "http://localhost:4111"}/chat/working-memory-personal-assistant-agent`,
+          api: `${baseUrl}/custom/resumable-chat/placeholder/chat`,
+          resumable: {
+            storage: durableStorage,
+            resumeApi: (streamId) => {
+              const tid =
+                currentThreadIdRef.current ??
+                (aui.threadListItem.getState() as any).remoteId ??
+                (aui.threadListItem.getState() as any).id;
+              return `${baseUrl}/custom/resumable-chat/${tid}/stream?runId=${streamId}&offset=0`;
+            },
+          },
+          prepareSendMessagesRequest: async (options) => ({
+            api: `${baseUrl}/custom/resumable-chat/${options.id}/chat`,
+            body: {
+              ...(options.body as object),
+              messages: (options as any).messages,
+              messageId: (options as any).messageId,
+              runId: `${options.id}:${(options as any).messageId ?? crypto.randomUUID()}`,
+            },
+          }),
+          prepareReconnectToStreamRequest: async (options) => {
+            const streamId = durableStorage.getStreamId(options.id);
+            if (!streamId) throw new Error("no resumable stream id");
+            return {
+              api: `${baseUrl}/custom/resumable-chat/${options.id}/stream?runId=${streamId}&offset=0`,
+              headers: options.headers,
+              credentials: options.credentials,
+            };
+          },
           body: () => {
             let tid = currentThreadIdRef.current;
             const isLocalId = tid?.startsWith("__LOCALID_");
@@ -125,20 +191,22 @@ export const Assistant = ({
                 }
               });
             }
+            const s = useComposerStore.getState();
             return {
               memory: {
                 thread: tid as string,
                 resource: RESOURCE_ID_KEY,
               },
-              modelName: composerState.modelName,
-              providerId: (composerState as any).providerId,
-              providerName: (composerState as any).providerName,
-              provider: (composerState as any).providerId,
-              webSearchEnabled: composerState.webSearchEnabled,
+              modelName: s.modelName,
+              providerId: s.providerId,
+              providerName: s.providerName,
+              provider: s.providerId,
+              webSearchEnabled: s.webSearchEnabled,
             };
           },
         }),
-      }),
+      });
+    },
     [speechAdapter, dictationAdapter],
   );
 
@@ -322,6 +390,29 @@ function AssistantHotkeys({
     if (!tid) return newChat();
     if (tid.startsWith("__LOCALID_")) return newChat();
     const targetId = tid;
+    try {
+      const runId = (() => {
+        try {
+          return window.sessionStorage.getItem(`aui-resumable:${targetId}`);
+        } catch {
+          return null;
+        }
+      })();
+      if (runId) {
+        const baseUrl =
+          process.env.NEXT_PUBLIC_MASTRA_BASE_URL ??
+          (process.env as any).MASTRA_BASE_URL ??
+          "http://localhost:4111";
+        await fetch(`${baseUrl}/custom/resumable-chat/${targetId}/stop`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ runId }),
+        }).catch(() => {});
+        try {
+          window.sessionStorage.removeItem(`aui-resumable:${targetId}`);
+        } catch {}
+      }
+    } catch {}
     newChat();
     try {
       try {
