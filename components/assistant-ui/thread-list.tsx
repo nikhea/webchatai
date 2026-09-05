@@ -198,6 +198,12 @@ const ServerThreadList: FC<{ searchQuery: string; className?: string }> = ({ sea
     try {
       (aui as unknown as { threads: { switchToThread: (id: string) => void } }).threads.switchToThread(id);
     } catch {}
+    if (!id.startsWith("__LOCALID_")) {
+      const expected = `/chat/${id}`;
+      if (typeof window !== "undefined" && window.location.pathname !== expected) {
+        window.history.pushState(null, "", expected);
+      }
+    }
   };
   if (infinite.isLoading) return <ThreadListSkeleton />;
   const merged = (() => {

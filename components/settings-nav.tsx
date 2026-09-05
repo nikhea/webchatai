@@ -18,7 +18,7 @@ const tabs = [
 export function SettingsNav() {
   const pathname = usePathname();
   return (
-    <nav className="mb-6 flex flex-wrap justify-around gap-0 rounded-lg bg-secondary/80 p-1 text-xs font-bold">
+    <nav className="mb-6 flex flex-nowrap gap-1 overflow-x-auto overflow-y-hidden rounded-lg bg-secondary/80 p-1 text-xs font-bold [scrollbar-width:thin] [scrollbar-color:theme(colors.zinc.700)_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-700 [&::-webkit-scrollbar-track]:bg-transparent">
       {tabs.map((t) => {
         const active = pathname === t.href || (t.href === "/settings/models" && pathname === "/settings");
         return (
@@ -26,7 +26,7 @@ export function SettingsNav() {
             key={t.id}
             href={t.href}
             className={cn(
-              "rounded-md bg-transparent px-2.5 py-1 font-bold text-zinc-400 transition-colors hover:bg-sidebar-accent/40 hover:text-zinc-100",
+              "shrink-0 whitespace-nowrap rounded-md bg-transparent px-3 py-1.5 font-bold text-zinc-400 transition-colors hover:bg-sidebar-accent/40 hover:text-zinc-100",
               active && "bg-background text-zinc-100",
             )}
           >

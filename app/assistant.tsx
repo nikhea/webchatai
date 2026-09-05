@@ -52,6 +52,11 @@ export const Assistant = ({
 
   useEffect(() => {
     currentThreadIdRef.current = currentThreadId;
+    const isLocal = currentThreadId?.startsWith("__LOCALID_");
+    const expected = !currentThreadId || isLocal ? "/" : `/chat/${currentThreadId}`;
+    if (typeof window !== "undefined" && window.location.pathname !== expected) {
+      window.history.pushState(null, "", expected);
+    }
   }, [currentThreadId]);
 
   useEffect(() => {
@@ -156,15 +161,21 @@ export const Assistant = ({
               return `${baseUrl}/custom/resumable-chat/${tid}/stream?runId=${streamId}&offset=0`;
             },
           },
-          prepareSendMessagesRequest: async (options) => ({
-            api: `${baseUrl}/custom/resumable-chat/${options.id}/chat`,
-            body: {
-              ...(options.body as object),
-              messages: (options as any).messages,
-              messageId: (options as any).messageId,
-              runId: `${options.id}:${(options as any).messageId ?? crypto.randomUUID()}`,
-            },
-          }),
+          prepareSendMessagesRequest: async (options) => {
+            const effectiveId =
+              (options.body as any)?.memory?.thread ??
+              (options.body as any)?.thread ??
+              options.id;
+            return {
+              api: `${baseUrl}/custom/resumable-chat/${effectiveId}/chat`,
+              body: {
+                ...(options.body as object),
+                messages: (options as any).messages,
+                messageId: (options as any).messageId,
+                runId: `${effectiveId}:${(options as any).messageId ?? crypto.randomUUID()}`,
+              },
+            };
+          },
           prepareReconnectToStreamRequest: async (options) => {
             const streamId = durableStorage.getStreamId(options.id);
             if (!streamId) throw new Error("no resumable stream id");
@@ -361,9 +372,13 @@ function AssistantHotkeys({
   setCurrentThreadId: (id: string | undefined) => void;
   adapter: ReturnType<typeof createMastraThreadListAdapter>;
 }) {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, isMobile, setOpenMobile } = useSidebar();
   const aui = useAui();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (isMobile) setOpenMobile(false);
+  }, [currentThreadId, isMobile, setOpenMobile]);
   const threadIds = useAuiState((s) => (s as unknown as { threads: { threadIds: string[] } }).threads.threadIds ?? []);
   const getCurrentId = () => currentThreadIdRef.current ?? currentThreadId;
 
@@ -473,7 +488,16 @@ function AssistantHeader({ onSearchOpen }: { onSearchOpen: () => void }) {
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 px-4">
-      {isCollapsed ? (
+      {isMobile ? (
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          aria-label="Open sidebar"
+          className="grid size-8 place-items-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+        >
+          <PanelLeftIcon className="size-4" />
+        </button>
+      ) : isCollapsed ? (
         <div className="bg-zinc-900 flex items-center gap-0.5 rounded-lg border border-zinc-800 p-1 shadow-sm">
           <button
             type="button"
