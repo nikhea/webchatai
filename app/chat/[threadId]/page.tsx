@@ -6,5 +6,9 @@ export default async function ChatThreadPage({
   params: Promise<{ threadId: string }>;
 }) {
   const { threadId } = await params;
-  return <Assistant threadId={threadId} />;
+  return (
+    <div suppressHydrationWarning>
+      <Assistant threadId={threadId} />
+    </div>
+  );
 }
