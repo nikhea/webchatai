@@ -1,14 +1,68 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Gauge, Sparkles, Search, Image as ImageIcon, Layers } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export default function AccountPage() {
+  const { data: session } = authClient.useSession() as any;
+  const user = (session?.user as any) || {};
   const [receipts, setReceipts] = useState(true);
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  useEffect(() => {
+    if (user?.name) setName(user.name);
+    if (user?.username) setUsername(user.username);
+  }, [user?.name, user?.username]);
+
+  const saveProfile = async () => {
+    setSaving(true);
+    setMsg(null);
+    const res: any = await authClient.updateUser({ name, username } as any);
+    setSaving(false);
+    if (res?.error) setMsg(res.error.message || "Failed");
+    else setMsg("Saved");
+  };
 
   return (
     <div className="space-y-3 md:space-y-0">
       <div className="space-y-6 text-[#f9f8fb]">
+        <div className="rounded-xl border border-zinc-800 bg-[#0b080b] p-6">
+          <h2 className="text-lg font-bold">Profile</h2>
+          <p className="text-sm text-zinc-400">Managed by better-auth (email/password, username, google, org, admin).</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="text-xs text-zinc-400">Email</label>
+              <Input value={user?.email || ""} disabled className="mt-1 bg-zinc-900" />
+              <p className="text-xs text-zinc-500 mt-1">{user?.emailVerified ? "Verified" : "Unverified"} {user?.username ? `• @${user.username}` : ""} {user?.role ? `• ${user.role}` : ""}</p>
+            </div>
+            <div>
+              <label className="text-xs text-zinc-400">User ID</label>
+              <Input value={user?.id || ""} disabled className="mt-1 bg-zinc-900 font-mono text-xs" />
+            </div>
+            <div>
+              <label className="text-xs text-zinc-400">Name</label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={user?.name || "Your name"} className="mt-1 bg-zinc-900" />
+            </div>
+            <div>
+              <label className="text-xs text-zinc-400">Username</label>
+              <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder={user?.username || "username"} className="mt-1 bg-zinc-900" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            <Button onClick={saveProfile} disabled={saving} className="bg-pink-700 hover:bg-pink-600 text-white">{saving ? "Saving..." : "Save"}</Button>
+            {msg && <span className="text-xs text-emerald-400">{msg}</span>}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <a href="/api/auth/reference" target="_blank" className="text-xs underline text-zinc-400 hover:text-zinc-200">Swagger / OpenAPI</a>
+            <span className="text-xs text-zinc-600">•</span>
+            <span className="text-xs text-zinc-500">Google: {user?.email ? "linked" : "—"} • Org: check /api/auth/organization</span>
+          </div>
+        </div>
         <div className="flex flex-row justify-between gap-2">
           <h1 className="text-xl font-bold text-[#f9f8fb]">Choose Your Plan</h1>
           <button className="shrink-0 rounded-md border border-zinc-800 bg-[#1a1219] px-4 py-1.5 text-xs font-bold text-zinc-300 hover:bg-zinc-800 hover:text-white">Manage Billing & Invoices</button>
