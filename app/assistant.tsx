@@ -20,6 +20,7 @@ import { lastAssistantMessageIsCompleteWithApprovalResponses } from "ai";
 import { Thread } from "@/components/assistant-ui/thread";
 import { SidebarInset, SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/mode-toggle";
+import { ShareButton } from "@/components/share-button";
 import { ThreadListSidebar } from "@/components/assistant-ui/threadlist-sidebar";
 import { ThreadSearchDialog } from "@/components/assistant-ui/thread-search-dialog";
 import { PanelLeftIcon, SearchIcon, PlusIcon } from "lucide-react";
@@ -527,7 +528,8 @@ function AssistantHeader({ onSearchOpen }: { onSearchOpen: () => void }) {
           </button>
         </div>
       ) : null}
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-2">
+        <ShareButton />
         <ModeToggle />
       </div>
     </header>

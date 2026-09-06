@@ -2,9 +2,9 @@ import { LoginForm } from "@/components/login-form";
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center bg-zinc-950 p-6 md:p-10">
-      <div className="flex w-full max-w-md flex-col items-center justify-center">
-        <LoginForm className="w-full" />
+    <div className="flex min-h-svh flex-col items-center justify-center bg-muted p-6 md:p-10">
+      <div className="w-full max-w-sm md:max-w-5xl lg:max-w-6xl">
+        <LoginForm />
       </div>
     </div>
   );

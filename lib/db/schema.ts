@@ -223,3 +223,36 @@ export const invitationRelations = relations(invitation, ({ one }) => ({
     references: [user.id],
   }),
 }));
+
+export const sharedChat = pgTable(
+  "shared_chat",
+  {
+    id: text("id").primaryKey(),
+    token: text("token").notNull().unique(),
+    threadId: text("thread_id").notNull(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id").references(() => organization.id, { onDelete: "set null" }),
+    title: text("title"),
+    snapshot: text("snapshot").notNull(),
+    isPublic: boolean("is_public").default(true).notNull(),
+    viewCount: integer("view_count").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+    expiresAt: timestamp("expires_at"),
+  },
+  (table) => [
+    index("shared_chat_token_idx").on(table.token),
+    index("shared_chat_thread_idx").on(table.threadId),
+    index("shared_chat_owner_idx").on(table.ownerId),
+  ],
+);
+
+export const sharedChatRelations = relations(sharedChat, ({ one }) => ({
+  owner: one(user, { fields: [sharedChat.ownerId], references: [user.id] }),
+  organization: one(organization, { fields: [sharedChat.organizationId], references: [organization.id] }),
+}));

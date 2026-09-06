@@ -47,10 +47,10 @@ export function LoginForm({
   };
 
   return (
-    <div className={cn("flex w-full flex-col items-center justify-center gap-6", className)} {...props}>
-      <Card className="flex w-full max-w-[420px] flex-col overflow-hidden border-zinc-800 bg-zinc-900/70 p-0 shadow-2xl backdrop-blur">
-        <CardContent className="flex flex-col p-6 md:p-8">
-          <form onSubmit={handleSubmit} className="flex w-full flex-col gap-6">
+    <div className={cn("flex flex-col gap-6", className)} {...props}>
+      <Card className="overflow-hidden p-0 md:min-h-[640px] lg:min-h-[720px]">
+        <CardContent className="grid p-0 md:grid-cols-2 md:min-h-[640px] lg:min-h-[720px]">
+          <form onSubmit={handleSubmit} className="p-6 md:p-8">
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
                 <h1 className="text-2xl font-bold">Welcome back</h1>
@@ -88,7 +88,7 @@ export function LoginForm({
                 />
               </Field>
               <Field>
-                <Button type="submit" disabled={loading} className="w-full bg-pink-700 text-white hover:bg-pink-600">
+                <Button type="submit" disabled={loading}>
                   {loading ? "Signing in..." : "Login"}
                 </Button>
               </Field>
@@ -129,9 +129,16 @@ export function LoginForm({
               </FieldDescription>
             </FieldGroup>
           </form>
+          <div className="relative hidden bg-muted md:block">
+            <img
+              src="/placeholder.svg"
+              alt="Image"
+              className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+            />
+          </div>
         </CardContent>
       </Card>
-      <FieldDescription className="px-6 text-center text-xs">
+      <FieldDescription className="px-6 text-center">
         By clicking continue, you agree to our <a href="#">Terms of Service</a> and{" "}
         <a href="#">Privacy Policy</a>.
       </FieldDescription>
