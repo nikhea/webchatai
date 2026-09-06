@@ -14,6 +14,8 @@ import { useAuiState } from "@assistant-ui/react";
 
 export function ShareButton() {
   const threadId = useAuiState((s: any) => s.threads.mainThreadId || s.thread?.id || (s as any).message?.threadId) as string | undefined;
+  const messages = useAuiState((s: any) => s.thread.messages) as any[];
+  const threadTitle = useAuiState((s: any) => (s.thread as any)?.title || (s.threads as any)?.currentThreadTitle || "") as string;
   const [open, setOpen] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
@@ -22,20 +24,30 @@ export function ShareButton() {
   const [isPublic, setIsPublic] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const currentThreadId = threadId && !String(threadId).startsWith("__LOCALID_") ? threadId : null;
+  const currentThreadId = threadId || "local-" + Date.now();
+  const hasMessages = Array.isArray(messages) && messages.length > 0;
 
   const create = async () => {
-    if (!currentThreadId) {
-      setError("Send a message first to create a shareable thread");
+    if (!hasMessages) {
+      setError("Send a message first to create a shareable snapshot");
       return;
     }
     setLoading(true);
     setError(null);
     try {
+      const snapshot = messages.map((m: any) => ({
+        id: m.id,
+        role: m.role,
+        parts: m.parts,
+        content: (m as any).content,
+        createdAt: (m as any).createdAt,
+        metadata: (m as any).metadata,
+      }));
+      const title = threadTitle || (snapshot.find((m: any) => m.role === "user")?.parts?.find((p: any) => p.type === "text")?.text?.slice(0, 60) as string) || "Shared chat";
       const res = await fetch("/api/share", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ threadId: currentThreadId, isPublic }),
+        body: JSON.stringify({ threadId: currentThreadId, isPublic, title, snapshot }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed");
@@ -59,10 +71,18 @@ export function ShareButton() {
     if (!token) return;
     setLoading(true);
     try {
+      const snapshot = messages.map((m: any) => ({
+        id: m.id,
+        role: m.role,
+        parts: m.parts,
+        content: (m as any).content,
+        createdAt: (m as any).createdAt,
+        metadata: (m as any).metadata,
+      }));
       const res = await fetch(`/api/share/${token}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh: true }),
+        body: JSON.stringify({ snapshot }),
       });
       if (!res.ok) throw new Error("Failed to update");
     } catch (e: any) {
@@ -104,8 +124,8 @@ export function ShareButton() {
             Snapshot link — anyone with link can view. Messages after sharing are private unless you update.
           </DialogDescription>
         </DialogHeader>
-        {!currentThreadId ? (
-          <p className="text-sm text-amber-400">Send a message first. Local threads cannot be shared until saved.</p>
+        {!hasMessages ? (
+          <p className="text-sm text-amber-400">Send a message first to create a snapshot.</p>
         ) : !token ? (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
