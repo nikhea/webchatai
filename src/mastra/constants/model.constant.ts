@@ -1,4 +1,4 @@
-const TITLE_GENERATION_MODEL = "openrouter/openrouter/free";
+const TITLE_GENERATION_MODEL = "groq/openai/gpt-oss-20b";
 const OBSERVATIONAL_MEMORY_MODEL = "ollama-cloud/gemma4:31b";
 const MAIN_MODEL = "groq/openai/gpt-oss-120b";
 
