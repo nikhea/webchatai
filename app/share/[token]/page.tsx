@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { sharedChat } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
+import { StaticMarkdown } from "@/components/assistant-ui/markdown-text";
 
 export const dynamic = "force-dynamic";
 
@@ -9,9 +10,13 @@ function Message({ role, text }: { role: string; text: string }) {
   const isUser = role === "user";
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
-      <div className={`max-w-[80%] rounded-xl px-4 py-3 text-sm ${isUser ? "bg-pink-700 text-white" : "bg-zinc-800 text-zinc-100"}`}>
+      <div
+        className={`max-w-[80%] rounded-xl px-4 py-3 text-sm ${isUser ? "bg-pink-700 text-white prose-invert" : "bg-zinc-800 text-zinc-100 prose-invert"} prose prose-sm max-w-none prose-p:my-2 prose-headings:mt-4 prose-headings:mb-2 prose-table:border prose-th:bg-zinc-700 prose-td:border-zinc-700 prose-code:before:content-none prose-code:after:content-none`}
+      >
         <div className="text-xs opacity-60 mb-1 capitalize">{role}</div>
-        <div className="whitespace-pre-wrap break-words">{text || "(empty)"}</div>
+        <div className="break-words">
+          {text ? <StaticMarkdown text={text} /> : <span className="opacity-60">(empty)</span>}
+        </div>
       </div>
     </div>
   );
