@@ -1,9 +1,18 @@
 import { mastraClient } from "./mastra-client";
 
 export const AGENT_ID = "working-memory-personal-assistant-agent";
-// export const RESOURCE_ID_KEY = "working-memory-personal-assistant-agent";
 
 export const RESOURCE_ID_KEY = "user-1234";
+
+async function resolveResourceId(fallback: string = RESOURCE_ID_KEY): Promise<string> {
+  try {
+    const { authClient } = await import("@/lib/auth-client");
+    const res: any = await (authClient as any).getSession();
+    const uid = res?.data?.user?.id || res?.user?.id || (res as any)?.data?.user?.id;
+    if (uid) return uid;
+  } catch {}
+  return fallback;
+}
 
 /**
  * Create thread
@@ -273,7 +282,8 @@ export async function branchThreadAtMessage(
   } catch (e) {
     const msg = String((e as Error)?.message ?? e);
     if (msg.includes("Thread not found") || msg.includes("404")) {
-      const fallback = await createThread(RESOURCE_ID_KEY, agentId, cloneTitle);
+      const rid = await resolveResourceId();
+      const fallback = await createThread(rid, agentId, cloneTitle);
       try {
         const fetched: unknown = await listMessages(agentId, threadId, { page: 0, perPage: 200 });
         const rows: unknown[] = (fetched as { messages?: unknown[] })?.messages ?? (Array.isArray(fetched) ? (fetched as unknown[]) : []);
@@ -283,11 +293,12 @@ export async function branchThreadAtMessage(
         const idx = sorted.findIndex((m) => m.id === messageId);
         const toCopy = idx !== -1 ? sorted.slice(0, idx + 1) : sorted;
         if (toCopy.length) {
+          const rid2 = await resolveResourceId();
           await mastraClient.saveMessageToMemory({
             messages: toCopy.map((m) => ({
               ...m,
               threadId: (fallback as unknown as { id: string }).id,
-              resourceId: RESOURCE_ID_KEY,
+              resourceId: rid2,
             })) as unknown as never[],
             agentId,
           });

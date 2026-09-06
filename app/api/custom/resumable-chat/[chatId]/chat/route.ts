@@ -1,7 +1,8 @@
 import { handleChatStream, smoothStream, withSseHeartbeat } from "@mastra/ai-sdk";
-import { RequestContext } from "@mastra/core/request-context";
+import { RequestContext, MASTRA_RESOURCE_ID_KEY } from "@mastra/core/request-context";
 import { createUIMessageStreamResponse } from "ai";
 import { mastra } from "@/src/mastra";
+import { auth } from "@/lib/auth";
 
 function getLatestUserText(messages: any[]): string {
   const lastMessage = [...messages].reverse().find((m: any) => m?.role === "user");
@@ -60,9 +61,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ chatId:
     return new Response(JSON.stringify({ error: "prompt is required" }), { status: 400, headers: { "content-type": "application/json" } });
   }
 
+  const session = await (auth as any).api.getSession({ headers: req.headers as any }).catch(() => null);
+  const sessionUid = (session as any)?.user?.id || (session as any)?.data?.user?.id;
+  if (sessionUid) requestContext.set(MASTRA_RESOURCE_ID_KEY as any, sessionUid);
   const runId =
     (body as any).runId ?? ((body as any).messageId ? `${chatId}:${(body as any).messageId}` : `${chatId}:${crypto.randomUUID()}`);
-  const resourceId = (chatParams as any)?.memory?.resource ?? "user-1234";
+  const resourceId = sessionUid || (chatParams as any)?.memory?.resource || "user-1234";
 
   const stream = await handleChatStream({
     mastra,

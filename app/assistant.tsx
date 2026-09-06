@@ -30,6 +30,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createMastraThreadListAdapter } from "./assistant/thread-list-adapter";
 import { RESOURCE_ID_KEY, AGENT_ID, deleteThread } from "@/lib/mastra/memory-queries";
 import { attachmentAdapter } from "@/lib/attachment-adapter";
+import { authClient } from "@/lib/auth-client";
 import { HotkeysProvider, useHotkey } from "@tanstack/react-hotkeys";
 import { useComposerStore } from "@/lib/composer-state";
 import { useHotkeysStore, keysToHotkey } from "@/lib/hotkeys-store";
@@ -46,6 +47,8 @@ export const Assistant = ({
   const [currentThreadId, setCurrentThreadId] = useState(normalizedInitialId);
   const [searchOpen, setSearchOpen] = useState(false);
   const currentThreadIdRef = useRef(currentThreadId);
+  const { data: session } = (authClient as any).useSession();
+  const resourceId = ((session as any)?.user?.id as string) || RESOURCE_ID_KEY;
 
   useEffect(() => {
     setCurrentThreadId(initialThreadId);
@@ -73,10 +76,10 @@ export const Assistant = ({
     () =>
       createMastraThreadListAdapter(
         queryClient,
-        RESOURCE_ID_KEY,
+        resourceId,
         () => currentThreadIdRef.current,
       ),
-    [queryClient],
+    [queryClient, resourceId],
   );
 
   const onThreadIdChange = useCallback((newThreadId: string | undefined) => {
@@ -208,7 +211,7 @@ export const Assistant = ({
             return {
               memory: {
                 thread: tid as string,
-                resource: RESOURCE_ID_KEY,
+                resource: resourceId,
               },
               modelName: s.modelName,
               providerId: s.providerId,
@@ -220,7 +223,7 @@ export const Assistant = ({
         }),
       });
     },
-    [speechAdapter, dictationAdapter],
+    [speechAdapter, dictationAdapter, resourceId],
   );
 
   const runtime = useRemoteThreadListRuntime({
@@ -344,6 +347,7 @@ export const Assistant = ({
             currentThreadIdRef={currentThreadIdRef}
             setCurrentThreadId={setCurrentThreadId}
             adapter={adapter}
+            resourceId={resourceId}
           />
           <div className="flex h-dvh w-full pr-0.5">
             <ThreadListSidebar onSearchOpen={() => setSearchOpen(true)} />
@@ -367,12 +371,14 @@ function AssistantHotkeys({
   currentThreadIdRef,
   setCurrentThreadId,
   adapter,
+  resourceId,
 }: {
   onSearchOpen: () => void;
   currentThreadId: string | undefined;
   currentThreadIdRef: React.MutableRefObject<string | undefined>;
   setCurrentThreadId: (id: string | undefined) => void;
   adapter: ReturnType<typeof createMastraThreadListAdapter>;
+  resourceId: string;
 }) {
   const { toggleSidebar, isMobile, setOpenMobile } = useSidebar();
   const aui = useAui();
@@ -438,7 +444,7 @@ function AssistantHotkeys({
       } catch {
         await deleteThread(AGENT_ID, targetId);
         const { memoryKeys } = await import("@/app/queries/memory.query");
-        const key = memoryKeys.threads(RESOURCE_ID_KEY, AGENT_ID);
+        const key = memoryKeys.threads(resourceId, AGENT_ID);
         queryClient.setQueryData(key as never, (old: unknown) => {
           const data = old as { threads?: { id: string }[] } | { id: string }[] | undefined;
           if (!data) return old as never;

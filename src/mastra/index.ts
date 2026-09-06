@@ -17,6 +17,7 @@ import {
   workingMemoryPersonalAssistantAgent,
   durableworkingMemoryPersonalAssistantAgent,
 } from "./agents/chatbot.agent";
+import { MASTRA_RESOURCE_ID_KEY } from "@mastra/core/request-context";
 import {
   chatbotRoutes,
   resumableChatPostRoute,
@@ -77,6 +78,20 @@ export const mastra = new Mastra({
         await next();
         const duration = Date.now() - start;
         console.log(`<-- ${c.req.method} ${c.req.url} - ${duration}ms`);
+      },
+      async (c, next) => {
+        try {
+          const { auth } = await import("@/lib/auth");
+          const session = await (auth as any).api
+            .getSession({ headers: c.req.raw.headers as any })
+            .catch(() => null);
+          const uid = (session as any)?.user?.id || (session as any)?.data?.user?.id;
+          if (uid) {
+            const rc: any = (c as any).get("requestContext");
+            if (rc && typeof rc.set === "function") rc.set(MASTRA_RESOURCE_ID_KEY, uid);
+          }
+        } catch {}
+        await next();
       },
     ],
     apiRoutes: [

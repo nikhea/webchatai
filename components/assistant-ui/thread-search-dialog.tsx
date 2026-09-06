@@ -7,6 +7,7 @@ import { MessageSquareIcon, SearchIcon, XIcon, CornerUpLeftIcon } from "lucide-r
 import { cn } from "@/lib/utils";
 import { useThreadSearch } from "@/app/queries/memory.query";
 import { RESOURCE_ID_KEY, AGENT_ID } from "@/lib/mastra/memory-queries";
+import { authClient } from "@/lib/auth-client";
 
 const DAY_IN_MS = 86_400_000;
 
@@ -33,7 +34,9 @@ export function ThreadSearchDialog({
     const id = setTimeout(() => setDebounced(query), 300);
     return () => clearTimeout(id);
   }, [query]);
-  const infinite = useThreadSearch(RESOURCE_ID_KEY, AGENT_ID, debounced, 12);
+  const { data: session } = (authClient as any).useSession();
+  const resourceId = ((session as any)?.user?.id as string) || RESOURCE_ID_KEY;
+  const infinite = useThreadSearch(resourceId, AGENT_ID, debounced, 12);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useThreads } from "@/app/queries/memory.query";
 import { AGENT_ID, RESOURCE_ID_KEY } from "@/lib/mastra/memory-queries";
+import { authClient } from "@/lib/auth-client";
 
 type Chat = {
   id: string;
@@ -72,13 +73,36 @@ function formatDate(d?: string) {
 
 export default function HistoryPage() {
   const [rowSelection, setRowSelection] = React.useState({});
-  const [shared, setShared] = React.useState<Shared[]>(sharedInitial);
+  const [shared, setShared] = React.useState<Shared[]>([]);
   const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 10 });
+  const { data: session } = (authClient as any).useSession();
+  const resourceId = ((session as any)?.user?.id as string) || RESOURCE_ID_KEY;
 
-  const { data, isLoading, isFetching, isError } = useThreads(RESOURCE_ID_KEY, AGENT_ID, {
+  const { data, isLoading, isFetching, isError } = useThreads(resourceId, AGENT_ID, {
     page: pagination.pageIndex,
     perPage: pagination.pageSize,
   });
+
+  React.useEffect(() => {
+    fetch("/api/share")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list: any[]) => {
+        if (Array.isArray(list) && list.length) {
+          setShared(
+            list.map((s: any) => ({
+              id: s.id,
+              title: s.title,
+              link: `${window.location.origin}${s.url}`,
+              forks: 0,
+              views: s.viewCount ?? 0,
+              date: s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "",
+              expanded: true,
+            })),
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const threadsRaw: any = data as any;
   const rows: Chat[] = React.useMemo(() => {

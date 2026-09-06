@@ -1299,10 +1299,15 @@ const BranchButton: FC = () => {
     try {
       const { AGENT_ID, branchThreadAtMessage } = await import("@/lib/mastra/memory-queries");
       const { memoryKeys } = await import("@/app/queries/memory.query");
-      const { RESOURCE_ID_KEY } = await import("@/lib/mastra/memory-queries");
+      const { authClient } = await import("@/lib/auth-client");
+      let rid = "user-1234";
+      try {
+        const s: any = await (authClient as any).getSession();
+        rid = s?.data?.user?.id || s?.user?.id || rid;
+      } catch {}
       const cloned = await branchThreadAtMessage(AGENT_ID, threadId as string, message.id as string);
       const newId = (cloned as unknown as { id: string }).id;
-      await queryClient.invalidateQueries({ queryKey: memoryKeys.threads(RESOURCE_ID_KEY, AGENT_ID) });
+      await queryClient.invalidateQueries({ queryKey: memoryKeys.threads(rid, AGENT_ID) });
       try {
         (aui as unknown as { threads: { switchToThread: (id: string) => void } }).threads?.switchToThread?.(newId);
       } catch {}
