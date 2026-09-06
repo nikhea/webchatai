@@ -27,6 +27,24 @@ export const workingMemoryPersonalAssistantAgent = new Agent({
   model: ({ requestContext }) => {
     const providerId = requestContext.get("providerId") as string | undefined;
     const modelName = requestContext.get("modelName") as string | undefined;
+    const byokKeys = (requestContext.get("byokKeys") as Record<string, string> | undefined) || {};
+    const byokKey = providerId ? byokKeys[providerId] || byokKeys[providerId.toLowerCase()] : undefined;
+    if (byokKey) {
+      try {
+        const { createOpenAI } = require("@ai-sdk/openai");
+        const baseURLs: Record<string, string> = {
+          groq: "https://api.groq.com/openai/v1",
+          openrouter: "https://openrouter.ai/api/v1",
+          cerebras: "https://api.cerebras.ai/v1",
+          nvidia: "https://integrate.api.nvidia.com/v1",
+          ollama: "https://api.ollama.ai/v1",
+        };
+        const baseURL = baseURLs[providerId!.toLowerCase()];
+        const provider = baseURL ? createOpenAI({ apiKey: byokKey, baseURL }) : createOpenAI({ apiKey: byokKey });
+        const modelId = modelName || "gpt-4o-mini";
+        return provider(modelId) as any;
+      } catch {}
+    }
     if (providerId && modelName) return `${providerId}-cloud/${modelName}` as any;
     if (modelName && modelName.includes("/")) return modelName as any;
     return (MAIN_MODEL ?? "openai/gpt-4o-mini") as any;

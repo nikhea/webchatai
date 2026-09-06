@@ -64,6 +64,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ chatId:
   const session = await (auth as any).api.getSession({ headers: req.headers as any }).catch(() => null);
   const sessionUid = (session as any)?.user?.id || (session as any)?.data?.user?.id;
   if (sessionUid) requestContext.set(MASTRA_RESOURCE_ID_KEY as any, sessionUid);
+  if (sessionUid) {
+    try {
+      const { db } = await import("@/lib/db");
+      const { userProviderKey } = await import("@/lib/db/schema");
+      const { eq } = await import("drizzle-orm");
+      const { decrypt } = await import("@/lib/byok/crypto");
+      const rows = await (db as any).select().from(userProviderKey).where(eq(userProviderKey.userId, sessionUid));
+      const map: Record<string, string> = {};
+      for (const r of rows as any[]) {
+        try {
+          const dec = decrypt(r.encryptedKey);
+          map[r.provider] = dec;
+          map[r.provider.toLowerCase()] = dec;
+        } catch {}
+      }
+      if (Object.keys(map).length) requestContext.set("byokKeys" as any, map);
+    } catch {}
+  }
   const runId =
     (body as any).runId ?? ((body as any).messageId ? `${chatId}:${(body as any).messageId}` : `${chatId}:${crypto.randomUUID()}`);
   const resourceId = sessionUid || (chatParams as any)?.memory?.resource || "user-1234";

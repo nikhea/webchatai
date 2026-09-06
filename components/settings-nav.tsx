@@ -10,6 +10,7 @@ const tabs = [
   { id: "history", label: "History & Sync", href: "/settings/history" },
   { id: "models", label: "Models", href: "/settings/models" },
   { id: "api-keys", label: "API Keys", href: "/settings/api-keys" },
+  { id: "byok", label: "BYOK", href: "/settings/byok" },
   { id: "attachments", label: "Attachments", href: "/settings/attachments" },
   { id: "shortcuts", label: "Shortcuts", href: "/settings/shortcuts" },
   { id: "contact", label: "Contact Us", href: "/settings/contact" },
