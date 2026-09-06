@@ -137,10 +137,11 @@ export const Assistant = ({
           }
         },
       });
-      const baseUrl =
+      const baseUrl = (
         process.env.NEXT_PUBLIC_MASTRA_BASE_URL ??
         process.env.MASTRA_BASE_URL ??
-        "http://localhost:4111";
+        (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000")
+      ).replace(/\/$/, "");
 
       return useChatRuntime({
         adapters: {
@@ -150,7 +151,7 @@ export const Assistant = ({
         },
         sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
         transport: new AssistantChatTransport({
-          api: `${baseUrl}/custom/resumable-chat/placeholder/chat`,
+          api: `${baseUrl}/api/custom/resumable-chat/placeholder/chat`,
           resumable: {
             storage: durableStorage,
             resumeApi: (streamId) => {
@@ -158,7 +159,7 @@ export const Assistant = ({
                 currentThreadIdRef.current ??
                 (aui.threadListItem.getState() as any).remoteId ??
                 (aui.threadListItem.getState() as any).id;
-              return `${baseUrl}/custom/resumable-chat/${tid}/stream?runId=${streamId}&offset=0`;
+              return `${baseUrl}/api/custom/resumable-chat/${tid}/stream?runId=${streamId}&offset=0`;
             },
           },
           prepareSendMessagesRequest: async (options) => {
@@ -167,7 +168,7 @@ export const Assistant = ({
               (options.body as any)?.thread ??
               options.id;
             return {
-              api: `${baseUrl}/custom/resumable-chat/${effectiveId}/chat`,
+              api: `${baseUrl}/api/custom/resumable-chat/${effectiveId}/chat`,
               body: {
                 ...(options.body as object),
                 messages: (options as any).messages,
@@ -180,7 +181,7 @@ export const Assistant = ({
             const streamId = durableStorage.getStreamId(options.id);
             if (!streamId) throw new Error("no resumable stream id");
             return {
-              api: `${baseUrl}/custom/resumable-chat/${options.id}/stream?runId=${streamId}&offset=0`,
+              api: `${baseUrl}/api/custom/resumable-chat/${options.id}/stream?runId=${streamId}&offset=0`,
               headers: options.headers,
               credentials: options.credentials,
             };
@@ -414,11 +415,12 @@ function AssistantHotkeys({
         }
       })();
       if (runId) {
-        const baseUrl =
+        const baseUrl = (
           process.env.NEXT_PUBLIC_MASTRA_BASE_URL ??
           (process.env as any).MASTRA_BASE_URL ??
-          "http://localhost:4111";
-        await fetch(`${baseUrl}/custom/resumable-chat/${targetId}/stop`, {
+          (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000")
+        ).replace(/\/$/, "");
+        await fetch(`${baseUrl}/api/custom/resumable-chat/${targetId}/stop`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ runId }),

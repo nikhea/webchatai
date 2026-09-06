@@ -163,7 +163,7 @@ const MastraSuspendFallback: FC<{ part: any }> = ({ part }) => {
       }
     } catch {}
     try {
-      const base: any = (typeof window !== "undefined" && (window as any).__MASTRA_BASE_URL) || process.env.NEXT_PUBLIC_MASTRA_BASE_URL || "http://localhost:4111";
+      const base: any = (typeof window !== "undefined" && (window as any).__MASTRA_BASE_URL) || process.env.NEXT_PUBLIC_MASTRA_BASE_URL || (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
       void base;
     } catch {}
   };

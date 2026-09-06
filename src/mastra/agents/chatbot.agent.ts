@@ -19,10 +19,11 @@ export const workingMemoryPersonalAssistantAgent = new Agent({
   name: "Working Memory Personal Assistant Agent",
   instructions: PERSONAL_ASSISTANT_INSTRUCTIONS,
   model: ({ requestContext }) => {
-    const providerId = requestContext.get("providerId");
-    const modelName = requestContext.get("modelName");
-    const model = `${providerId}-cloud/${modelName}`;
-    return (model ?? "openai/gpt-4o-mini") as any;
+    const providerId = requestContext.get("providerId") as string | undefined;
+    const modelName = requestContext.get("modelName") as string | undefined;
+    if (providerId && modelName) return `${providerId}-cloud/${modelName}` as any;
+    if (modelName && modelName.includes("/")) return modelName as any;
+    return (MAIN_MODEL ?? "openai/gpt-4o-mini") as any;
   },
   memory: new Memory({
     options: {
