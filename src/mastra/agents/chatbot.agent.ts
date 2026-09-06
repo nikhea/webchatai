@@ -17,13 +17,7 @@ import { redisCache, redisPubSub } from "../utils/redis"
 export const workingMemoryPersonalAssistantAgent = new Agent({
   id: "working-memory-personal-assistant-agent",
   name: "Working Memory Personal Assistant Agent",
-  // @ts-ignore - editor overrides handled by MastraEditor, instructions/tools remain code defaults
   instructions: PERSONAL_ASSISTANT_INSTRUCTIONS,
-  // @ts-ignore
-  editor: {
-    instructions: true,
-    tools: true,
-  },
   model: ({ requestContext }) => {
     const providerId = requestContext.get("providerId") as string | undefined;
     const modelName = requestContext.get("modelName") as string | undefined;
