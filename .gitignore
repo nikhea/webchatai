@@ -43,3 +43,10 @@ next-env.d.ts
 
 # Turborepo
 .turbo
+
+# mastra / drizzle
+/mastra.db*
+/mastra/
+*.db-shm
+*.db-wal
+/mastra/*.db

@@ -7,7 +7,7 @@ const globalForDb = globalThis as unknown as { pgPool?: Pool };
 export const pool =
   globalForDb.pgPool ??
   new Pool({
-    connectionString: process.env.DATABASE_URL || "postgresql://admin:adminpassword@localhost:5432/mastra",
+    connectionString: process.env.DATABASE_URL || "postgresql://admin:adminpassword@localhost:5432/my-aui-app",
   });
 
 if (process.env.NODE_ENV !== "production") globalForDb.pgPool = pool;
