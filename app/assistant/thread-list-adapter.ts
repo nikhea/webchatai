@@ -305,11 +305,19 @@ export function createMastraThreadListAdapter(
         }
         const text = raw.trim().slice(0, 48) || "New Chat";
         controller.appendText(text);
+        let effectiveId = remoteId;
+        if (String(effectiveId).startsWith("__LOCALID_")) {
+          const real = getCurrentThreadId?.();
+          if (real && !String(real).startsWith("__LOCALID_")) effectiveId = real;
+          else return;
+        }
         try {
-          await renameThread(resourceId, AGENT_ID, remoteId, text);
+          await renameThread(resourceId, AGENT_ID, effectiveId, text);
           await queryClient.invalidateQueries({ queryKey: memoryKeys.threads(resourceId, AGENT_ID) });
           await queryClient.refetchQueries({ queryKey: memoryKeys.threads(resourceId, AGENT_ID) });
-        } catch (e) {
+        } catch (e: any) {
+          const msg = String(e?.message || "");
+          if (msg.includes("Thread not found") || String((e as any)?.status) === "404") return;
           console.warn("generateTitle rename failed", e);
         }
       });

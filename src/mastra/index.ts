@@ -18,6 +18,7 @@ import {
   durableworkingMemoryPersonalAssistantAgent,
 } from "./agents/chatbot.agent";
 import { MASTRA_RESOURCE_ID_KEY } from "@mastra/core/request-context";
+import { MastraEditor } from "@mastra/editor";
 import {
   chatbotRoutes,
   resumableChatPostRoute,
@@ -41,6 +42,7 @@ export const mastra = new Mastra({
     translationScorer,
   },
   storage: storage,
+  editor: new MastraEditor(),
   logger: new PinoLogger({
     name: "Mastra",
     level: "info",

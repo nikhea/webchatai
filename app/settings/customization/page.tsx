@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, KeyboardEvent } from "react";
-import { Info, Plus, ChevronDown, Circle } from "lucide-react";
+import { useEffect, useState, KeyboardEvent } from "react";
+import { Info, Plus, ChevronDown, Circle, Save, Sparkles, Blocks } from "lucide-react";
 
 const PRESET_TRAITS = ["friendly", "witty", "concise", "curious", "empathetic", "creative", "patient"] as const;
 
@@ -12,6 +12,50 @@ export default function CustomizationPage() {
   const [traitInput, setTraitInput] = useState("");
   const [about, setAbout] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [instructions, setInstructions] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [promptBlocks, setPromptBlocks] = useState<any[]>([]);
+  const [newBlock, setNewBlock] = useState({ id: "", name: "", content: "" });
+
+  useEffect(() => {
+    fetch("/api/customization")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        if (d.user?.name) setName(d.user.name);
+        if (d.agentInstructions && typeof d.agentInstructions === "string") setInstructions(d.agentInstructions);
+        else if (Array.isArray(d.agentInstructions)) setInstructions(JSON.stringify(d.agentInstructions, null, 2));
+        if (Array.isArray(d.promptBlocks)) setPromptBlocks(d.promptBlocks);
+      })
+      .catch(() => {});
+    const saved = typeof window !== "undefined" ? localStorage.getItem("t3-customization") : null;
+    if (saved) {
+      try {
+        const p = JSON.parse(saved);
+        if (p.name) setName(p.name);
+        if (p.role) setRole(p.role);
+        if (Array.isArray(p.traits)) setTraits(p.traits);
+        if (p.about) setAbout(p.about);
+      } catch {}
+    }
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    setMsg(null);
+    const payload = { name, role, traits, about, instructions: instructions || undefined };
+    localStorage.setItem("t3-customization", JSON.stringify({ name, role, traits, about }));
+    try {
+      const res = await fetch("/api/customization", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      if (!res.ok) throw new Error("Failed");
+      setMsg("Saved to Editor (draft) + working memory");
+    } catch (e: any) {
+      setMsg(e.message || "Saved locally");
+    }
+    setSaving(false);
+    setTimeout(() => setMsg(null), 3000);
+  };
 
   const addTrait = (t: string) => {
     const v = t.trim().toLowerCase();
@@ -153,15 +197,71 @@ export default function CustomizationPage() {
             <span className="pointer-events-none absolute bottom-2 right-3 text-xs text-zinc-500">{about.length}/3000</span>
           </div>
         </div>
+
+        <div className="rounded-xl border border-zinc-800 bg-[#0b080b] p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="size-4 text-pink-400" />
+            <h3 className="text-sm font-semibold text-white">Mastra Editor — Instructions (CMS)</h3>
+            <span className="ml-auto text-xs text-zinc-500">Studio → Agents → Editor</span>
+          </div>
+          <p className="text-xs text-zinc-400 mb-2">
+            Collaborators can override system prompt without code. Use <code className="bg-zinc-800 px-1 rounded">{"{{userName}}"}</code> /{" "}
+            <code className="bg-zinc-800 px-1 rounded">{"{{user.role}}"}</code> from requestContext. Saved as draft, publish when ready.
+          </p>
+          <textarea
+            value={instructions}
+            onChange={(e) => setInstructions(e.target.value)}
+            placeholder="Instructions for working-memory-personal-assistant-agent…"
+            rows={6}
+            className="w-full rounded-md border border-zinc-800 bg-[#15101a] p-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-700 focus:outline-none font-mono"
+          />
+          <p className="text-xs text-zinc-500 mt-1">Leave empty to keep code default. Supports prompt blocks via Editor: create under Prompts → Add block.</p>
+        </div>
+
+        <div className="rounded-xl border border-zinc-800 bg-[#0b080b] p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Blocks className="size-4 text-pink-400" />
+            <h3 className="text-sm font-semibold text-white">Prompt Blocks (reusable)</h3>
+            <span className="text-xs text-zinc-500">e.g. refund policy for support/returns/order-status</span>
+          </div>
+          {promptBlocks.length === 0 ? (
+            <p className="text-xs text-zinc-500">No blocks yet. Create in Studio → Prompts or via API <code className="bg-zinc-800 px-1 rounded">editor.prompt.create</code>.</p>
+          ) : (
+            <div className="space-y-2">
+              {promptBlocks.slice(0, 5).map((b: any) => (
+                <div key={b.id} className="rounded border border-zinc-800 bg-zinc-900/50 p-2">
+                  <div className="text-xs font-medium text-zinc-200">{b.name || b.id}</div>
+                  <div className="text-xs text-zinc-400 truncate">{b.description || b.content?.slice(0, 80)}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            <input value={newBlock.id} onChange={(e) => setNewBlock({ ...newBlock, id: e.target.value })} placeholder="id: brand-voice" className="rounded border border-zinc-800 bg-zinc-900 px-2 py-1 text-xs" />
+            <input value={newBlock.name} onChange={(e) => setNewBlock({ ...newBlock, name: e.target.value })} placeholder="name" className="rounded border border-zinc-800 bg-zinc-900 px-2 py-1 text-xs" />
+            <input value={newBlock.content} onChange={(e) => setNewBlock({ ...newBlock, content: e.target.value })} placeholder="content: Write in {{userName}} tone" className="rounded border border-zinc-800 bg-zinc-900 px-2 py-1 text-xs" />
+          </div>
+          <button
+            onClick={async () => {
+              if (!newBlock.id || !newBlock.content) return;
+              await fetch("/api/customization", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ instructions: newBlock.content }) });
+              setMsg("Block draft saved (use Studio to publish)");
+            }}
+            className="mt-2 rounded bg-zinc-800 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-700"
+          >
+            Save block draft
+          </button>
+        </div>
       </div>
 
-      <div className="mt-8 flex justify-end">
+      <div className="mt-8 flex items-center justify-end gap-3">
+        {msg && <span className="text-xs text-emerald-400">{msg}</span>}
         <button
-          disabled={!dirty}
-          onClick={() => alert("Preferences saved")}
-          className="rounded-md bg-[#a12a5e] px-5 py-2 text-sm font-medium text-white hover:bg-[#b0306a] disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={!dirty && !instructions}
+          onClick={save}
+          className="inline-flex items-center gap-1.5 rounded-md bg-[#a12a5e] px-5 py-2 text-sm font-medium text-white hover:bg-[#b0306a] disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Save Preferences
+          <Save className="size-4" /> {saving ? "Saving..." : "Save Preferences"}
         </button>
       </div>
     </div>

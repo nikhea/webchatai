@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { sharedChat } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import { StaticMarkdown } from "@/components/assistant-ui/markdown-text";
 
@@ -39,6 +39,15 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
     .where(eq(sharedChat.token, token))
     .limit(1)
     .then((r) => r[0] as any);
+  if (row) {
+    try {
+      await db
+        .update(sharedChat)
+        .set({ viewCount: sql`${sharedChat.viewCount} + 1` } as any)
+        .where(eq(sharedChat.token, token));
+      (row as any).viewCount = ((row as any).viewCount as number || 0) + 1;
+    } catch {}
+  }
   if (!row) {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-[#131314] text-zinc-100 p-6">
