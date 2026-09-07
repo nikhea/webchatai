@@ -13,6 +13,7 @@ import { weatherTool } from "../tools/weather-tool";
 import { TokenUsageProcessor } from "../processors/token-usage-processor";
 import { tavilyTools } from "../tools/tavilt-tool";
 import { redisCache, redisPubSub } from "../utils/redis"
+import { chatBotMemory } from "../memory/chatbot.memory";
 
 export const workingMemoryPersonalAssistantAgent = new Agent({
   id: "working-memory-personal-assistant-agent",
@@ -43,20 +44,7 @@ export const workingMemoryPersonalAssistantAgent = new Agent({
     if (modelName && modelName.includes("/")) return modelName as any;
     return (MAIN_MODEL ?? "openai/gpt-4o-mini") as any;
   },
-  memory: new Memory({
-    options: {
-      lastMessages: 15,
-      generateTitle: {
-        model: TITLE_GENERATION_MODEL,
-      },
-      workingMemory: {
-        enabled: true,
-        useStateSignals: true,
-        scope: "resource",
-        template: userProfileWorkingMemoryTemplateString,
-      },
-    },
-  }),
+  memory:chatBotMemory,
   outputProcessors: [new TokenUsageProcessor()],
   // @ts-ignore
   tools: ({ requestContext }: any) => {
