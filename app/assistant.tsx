@@ -14,11 +14,13 @@ import { KokoroFastAPIAdapter } from "@/lib/kokoro-fastapi-adapter";
 import {
   useChatRuntime,
   AssistantChatTransport,
+  createResumableSessionStorage,
 } from "@assistant-ui/react-ai-sdk";
 import { lastAssistantMessageIsCompleteWithApprovalResponses } from "ai";
 import { Thread } from "@/components/assistant-ui/thread";
 import { SidebarInset, SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/mode-toggle";
+import { ShareButton } from "@/components/share-button";
 import { ThreadListSidebar } from "@/components/assistant-ui/threadlist-sidebar";
 import { ThreadSearchDialog } from "@/components/assistant-ui/thread-search-dialog";
 import { PanelLeftIcon, SearchIcon, PlusIcon } from "lucide-react";
@@ -28,8 +30,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createMastraThreadListAdapter } from "./assistant/thread-list-adapter";
 import { RESOURCE_ID_KEY, AGENT_ID, deleteThread } from "@/lib/mastra/memory-queries";
 import { attachmentAdapter } from "@/lib/attachment-adapter";
+import { authClient } from "@/lib/auth-client";
 import { HotkeysProvider, useHotkey } from "@tanstack/react-hotkeys";
-import { composerState } from "@/lib/composer-state";
+import { useComposerStore } from "@/lib/composer-state";
 import { useHotkeysStore, keysToHotkey } from "@/lib/hotkeys-store";
 
 export const Assistant = ({
@@ -44,6 +47,8 @@ export const Assistant = ({
   const [currentThreadId, setCurrentThreadId] = useState(normalizedInitialId);
   const [searchOpen, setSearchOpen] = useState(false);
   const currentThreadIdRef = useRef(currentThreadId);
+  const { data: session } = (authClient as any).useSession();
+  const resourceId = ((session as any)?.user?.id as string) || RESOURCE_ID_KEY;
 
   useEffect(() => {
     setCurrentThreadId(initialThreadId);
@@ -51,6 +56,11 @@ export const Assistant = ({
 
   useEffect(() => {
     currentThreadIdRef.current = currentThreadId;
+    const isLocal = currentThreadId?.startsWith("__LOCALID_");
+    const expected = !currentThreadId || isLocal ? "/" : `/chat/${currentThreadId}`;
+    if (typeof window !== "undefined" && window.location.pathname !== expected) {
+      window.history.pushState(null, "", expected);
+    }
   }, [currentThreadId]);
 
   useEffect(() => {
@@ -66,10 +76,10 @@ export const Assistant = ({
     () =>
       createMastraThreadListAdapter(
         queryClient,
-        RESOURCE_ID_KEY,
+        resourceId,
         () => currentThreadIdRef.current,
       ),
-    [queryClient],
+    [queryClient, resourceId],
   );
 
   const onThreadIdChange = useCallback((newThreadId: string | undefined) => {
@@ -97,9 +107,47 @@ export const Assistant = ({
     }
   }, []);
 
+  useEffect(() => {
+    const suppress = (e: any) => {
+      const msg = String(e?.message ?? e?.reason?.message ?? e?.reason ?? "");
+      if (msg.includes("no resumable stream id")) {
+        e.preventDefault?.();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+        return true;
+      }
+    };
+    window.addEventListener("error", suppress as any);
+    window.addEventListener("unhandledrejection", suppress as any);
+    return () => {
+      window.removeEventListener("error", suppress as any);
+      window.removeEventListener("unhandledrejection", suppress as any);
+    };
+  }, []);
+
   const runtimeHook = useCallback(
-    () =>
-      useChatRuntime({
+    () => {
+      const aui = useAui();
+      const durableStorage = createResumableSessionStorage({
+        key: () => {
+          const tid = currentThreadIdRef.current;
+          if (tid && !tid.startsWith("__LOCALID_")) return `aui-resumable:${tid}`;
+          try {
+            const s: any = aui.threadListItem.getState();
+            const fallback = s.remoteId ?? s.id;
+            if (fallback && !String(fallback).startsWith("__LOCALID_")) return `aui-resumable:${fallback}`;
+            return tid ? `aui-resumable:${tid}` : undefined;
+          } catch {
+            return tid ? `aui-resumable:${tid}` : undefined;
+          }
+        },
+      });
+      const baseUrl = (
+        process.env.NEXT_PUBLIC_MASTRA_BASE_URL ??
+        process.env.MASTRA_BASE_URL ??
+        (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000")
+      ).replace(/\/$/, "");
+
+      return useChatRuntime({
         adapters: {
           speech: speechAdapter,
           dictation: dictationAdapter,
@@ -107,7 +155,41 @@ export const Assistant = ({
         },
         sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
         transport: new AssistantChatTransport({
-          api: `${process.env.NEXT_PUBLIC_MASTRA_BASE_URL ?? process.env.MASTRA_BASE_URL ?? "http://localhost:4111"}/chat/working-memory-personal-assistant-agent`,
+          api: `${baseUrl}/api/custom/resumable-chat/placeholder/chat`,
+          resumable: {
+            storage: durableStorage,
+            resumeApi: (streamId) => {
+              const tid =
+                currentThreadIdRef.current ??
+                (aui.threadListItem.getState() as any).remoteId ??
+                (aui.threadListItem.getState() as any).id;
+              return `${baseUrl}/api/custom/resumable-chat/${tid}/stream?runId=${streamId}&offset=0`;
+            },
+          },
+          prepareSendMessagesRequest: async (options) => {
+            const effectiveId =
+              (options.body as any)?.memory?.thread ??
+              (options.body as any)?.thread ??
+              options.id;
+            return {
+              api: `${baseUrl}/api/custom/resumable-chat/${effectiveId}/chat`,
+              body: {
+                ...(options.body as object),
+                messages: (options as any).messages,
+                messageId: (options as any).messageId,
+                runId: `${effectiveId}:${(options as any).messageId ?? crypto.randomUUID()}`,
+              },
+            };
+          },
+          prepareReconnectToStreamRequest: async (options) => {
+            const streamId = durableStorage.getStreamId(options.id);
+            if (!streamId) throw new Error("no resumable stream id");
+            return {
+              api: `${baseUrl}/api/custom/resumable-chat/${options.id}/stream?runId=${streamId}&offset=0`,
+              headers: options.headers,
+              credentials: options.credentials,
+            };
+          },
           body: () => {
             let tid = currentThreadIdRef.current;
             const isLocalId = tid?.startsWith("__LOCALID_");
@@ -125,21 +207,23 @@ export const Assistant = ({
                 }
               });
             }
+            const s = useComposerStore.getState();
             return {
               memory: {
                 thread: tid as string,
-                resource: RESOURCE_ID_KEY,
+                resource: resourceId,
               },
-              modelName: composerState.modelName,
-              providerId: (composerState as any).providerId,
-              providerName: (composerState as any).providerName,
-              provider: (composerState as any).providerId,
-              webSearchEnabled: composerState.webSearchEnabled,
+              modelName: s.modelName,
+              providerId: s.providerId,
+              providerName: s.providerName,
+              provider: s.providerId,
+              webSearchEnabled: s.webSearchEnabled,
             };
           },
         }),
-      }),
-    [speechAdapter, dictationAdapter],
+      });
+    },
+    [speechAdapter, dictationAdapter, resourceId],
   );
 
   const runtime = useRemoteThreadListRuntime({
@@ -263,6 +347,7 @@ export const Assistant = ({
             currentThreadIdRef={currentThreadIdRef}
             setCurrentThreadId={setCurrentThreadId}
             adapter={adapter}
+            resourceId={resourceId}
           />
           <div className="flex h-dvh w-full pr-0.5">
             <ThreadListSidebar onSearchOpen={() => setSearchOpen(true)} />
@@ -286,16 +371,22 @@ function AssistantHotkeys({
   currentThreadIdRef,
   setCurrentThreadId,
   adapter,
+  resourceId,
 }: {
   onSearchOpen: () => void;
   currentThreadId: string | undefined;
   currentThreadIdRef: React.MutableRefObject<string | undefined>;
   setCurrentThreadId: (id: string | undefined) => void;
   adapter: ReturnType<typeof createMastraThreadListAdapter>;
+  resourceId: string;
 }) {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, isMobile, setOpenMobile } = useSidebar();
   const aui = useAui();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (isMobile) setOpenMobile(false);
+  }, [currentThreadId, isMobile, setOpenMobile]);
   const threadIds = useAuiState((s) => (s as unknown as { threads: { threadIds: string[] } }).threads.threadIds ?? []);
   const getCurrentId = () => currentThreadIdRef.current ?? currentThreadId;
 
@@ -322,6 +413,30 @@ function AssistantHotkeys({
     if (!tid) return newChat();
     if (tid.startsWith("__LOCALID_")) return newChat();
     const targetId = tid;
+    try {
+      const runId = (() => {
+        try {
+          return window.sessionStorage.getItem(`aui-resumable:${targetId}`);
+        } catch {
+          return null;
+        }
+      })();
+      if (runId) {
+        const baseUrl = (
+          process.env.NEXT_PUBLIC_MASTRA_BASE_URL ??
+          (process.env as any).MASTRA_BASE_URL ??
+          (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000")
+        ).replace(/\/$/, "");
+        await fetch(`${baseUrl}/api/custom/resumable-chat/${targetId}/stop`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ runId }),
+        }).catch(() => {});
+        try {
+          window.sessionStorage.removeItem(`aui-resumable:${targetId}`);
+        } catch {}
+      }
+    } catch {}
     newChat();
     try {
       try {
@@ -329,7 +444,7 @@ function AssistantHotkeys({
       } catch {
         await deleteThread(AGENT_ID, targetId);
         const { memoryKeys } = await import("@/app/queries/memory.query");
-        const key = memoryKeys.threads(RESOURCE_ID_KEY, AGENT_ID);
+        const key = memoryKeys.threads(resourceId, AGENT_ID);
         queryClient.setQueryData(key as never, (old: unknown) => {
           const data = old as { threads?: { id: string }[] } | { id: string }[] | undefined;
           if (!data) return old as never;
@@ -382,7 +497,16 @@ function AssistantHeader({ onSearchOpen }: { onSearchOpen: () => void }) {
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 px-4">
-      {isCollapsed ? (
+      {isMobile ? (
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          aria-label="Open sidebar"
+          className="grid size-8 place-items-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+        >
+          <PanelLeftIcon className="size-4" />
+        </button>
+      ) : isCollapsed ? (
         <div className="bg-zinc-900 flex items-center gap-0.5 rounded-lg border border-zinc-800 p-1 shadow-sm">
           <button
             type="button"
@@ -410,7 +534,8 @@ function AssistantHeader({ onSearchOpen }: { onSearchOpen: () => void }) {
           </button>
         </div>
       ) : null}
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-2">
+        <ShareButton />
         <ModeToggle />
       </div>
     </header>

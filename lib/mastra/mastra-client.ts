@@ -4,5 +4,5 @@ export const mastraClient = new MastraClient({
   baseUrl:
     process.env.NEXT_PUBLIC_MASTRA_BASE_URL ??
     process.env.MASTRA_BASE_URL ??
-    "http://localhost:4111",
+    (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"),
 });

@@ -103,7 +103,7 @@ import {
   type PropsWithChildren,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { composerState } from "@/lib/composer-state";
+import { useComposerStore } from "@/lib/composer-state";
 
 const MastraSuspendFallback: FC<{ part: any }> = ({ part }) => {
   const anyPart: any = part as any;
@@ -163,7 +163,7 @@ const MastraSuspendFallback: FC<{ part: any }> = ({ part }) => {
       }
     } catch {}
     try {
-      const base: any = (typeof window !== "undefined" && (window as any).__MASTRA_BASE_URL) || process.env.NEXT_PUBLIC_MASTRA_BASE_URL || "http://localhost:4111";
+      const base: any = (typeof window !== "undefined" && (window as any).__MASTRA_BASE_URL) || process.env.NEXT_PUBLIC_MASTRA_BASE_URL || (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
       void base;
     } catch {}
   };
@@ -442,6 +442,7 @@ const ThreadScrollToBottom: FC = () => {
           tooltip="Scroll to bottom"
           variant="outline"
           className="aui-thread-scroll-to-bottom dark:border-border dark:bg-background dark:hover:bg-accent absolute -top-12 z-10 self-center rounded-full p-4 disabled:invisible"
+          suppressHydrationWarning
         />
       }
     >
@@ -652,15 +653,8 @@ const Composer: FC<{ autoFocus: boolean }> = ({ autoFocus }) => {
 
 const ComposerModelPicker: FC = () => {
   const aui = useAui();
-  const [selected, setSelected] = useState("Gemini 3 Flash");
-  const [providerId, setProviderId] = useState("gemini");
-  const [providerName, setProviderName] = useState("Google Gemini");
+  const { modelName: selected, providerId, providerName, setModel } = useComposerStore();
   const [open, setOpen] = useState(false);
-  useEffect(() => {
-    composerState.modelName = selected;
-    composerState.providerId = providerId;
-    composerState.providerName = providerName;
-  }, [selected, providerId, providerName]);
   useEffect(() => {
     const handler = () => setOpen((v) => !v);
     window.addEventListener("toggle-model-picker", handler);
@@ -679,9 +673,7 @@ const ComposerModelPicker: FC = () => {
         onClose={() => setOpen(false)}
         selectedName={selected}
         onSelect={(name, pid, pname) => {
-          setSelected(name);
-          setProviderId(pid);
-          setProviderName(pname);
+          setModel(name, pid, pname);
           setOpen(false);
         }}
       />
@@ -691,10 +683,7 @@ const ComposerModelPicker: FC = () => {
 
 const ComposerWebSearchToggle: FC = () => {
   const aui = useAui();
-  const [enabled, setEnabled] = useState(false);
-  useEffect(() => {
-    composerState.webSearchEnabled = enabled;
-  }, [enabled]);
+  const { webSearchEnabled: enabled, setWebSearchEnabled: setEnabled } = useComposerStore();
   useEffect(() => {
     return aui.modelContext.register({
       getModelContext: () => ({ config: { webSearchEnabled: enabled } as unknown as Record<string, unknown> }),
@@ -706,7 +695,7 @@ const ComposerWebSearchToggle: FC = () => {
       variant={enabled ? "default" : "ghost"}
       size="icon"
       className={cn("size-7 rounded-full", enabled && "bg-primary text-primary-foreground")}
-      onClick={() => setEnabled((v) => !v)}
+      onClick={() => setEnabled(!enabled)}
       aria-pressed={enabled}
       aria-label="Toggle web search"
     >
@@ -1311,10 +1300,15 @@ const BranchButton: FC = () => {
     try {
       const { AGENT_ID, branchThreadAtMessage } = await import("@/lib/mastra/memory-queries");
       const { memoryKeys } = await import("@/app/queries/memory.query");
-      const { RESOURCE_ID_KEY } = await import("@/lib/mastra/memory-queries");
+      const { authClient } = await import("@/lib/auth-client");
+      let rid = "user-1234";
+      try {
+        const s: any = await (authClient as any).getSession();
+        rid = s?.data?.user?.id || s?.user?.id || rid;
+      } catch {}
       const cloned = await branchThreadAtMessage(AGENT_ID, threadId as string, message.id as string);
       const newId = (cloned as unknown as { id: string }).id;
-      await queryClient.invalidateQueries({ queryKey: memoryKeys.threads(RESOURCE_ID_KEY, AGENT_ID) });
+      await queryClient.invalidateQueries({ queryKey: memoryKeys.threads(rid, AGENT_ID) });
       try {
         (aui as unknown as { threads: { switchToThread: (id: string) => void } }).threads?.switchToThread?.(newId);
       } catch {}

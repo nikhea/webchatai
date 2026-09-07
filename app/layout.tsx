@@ -28,8 +28,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${ibmPlexMono.variable} antialiased`}>
+    <html lang="en" suppressHydrationWarning data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false">
+      <body
+        className={`${inter.variable} ${ibmPlexMono.variable} antialiased`}
+        suppressHydrationWarning
+        data-gramm="false"
+        data-gramm_editor="false"
+        data-enable-grammarly="false"
+      >
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{for(const a of ["data-new-gr-c-s-check-loaded","data-gr-ext-installed"]){document.documentElement.removeAttribute(a);document.body&&document.body.removeAttribute(a)}}catch(e){}`,
+          }}
+        />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <QueryProvider>
             <TooltipProvider>{children}</TooltipProvider>

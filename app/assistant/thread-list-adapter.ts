@@ -115,7 +115,9 @@ export function createMastraThreadListAdapter(
         const deduped: typeof mapped = [];
         const duplicates: string[] = [];
         for (const th of mapped) {
-          const keyTitle = (th.title ?? "").trim().toLowerCase();
+          const rawTitle = (th.title ?? "").trim();
+          const isDefault = !rawTitle || ["new chat", "new conversation"].includes(rawTitle.toLowerCase());
+          const keyTitle = isDefault ? `__default_${th.remoteId}` : rawTitle.toLowerCase();
           if (!seen.has(keyTitle)) {
             seen.set(keyTitle, th);
             deduped.push(th);
@@ -287,21 +289,37 @@ export function createMastraThreadListAdapter(
 
     async generateTitle(remoteId, messages) {
       return createAssistantStream(async (controller) => {
-        const firstUserText = (messages.find((m) => m.role === "user") as any)?.content?.[0];
-        const text =
-          firstUserText && "text" in (firstUserText as any)
-            ? (firstUserText as any).text.slice(0, 40)
-            : (((messages.find((m) => m.role === "user") as any)?.parts?.[0] as any)?.text?.slice(
-                0,
-                40,
-              ) ?? "New Conversation");
+        const firstUser: any = messages.find((m: any) => m.role === "user");
+        let raw = "";
+        if (firstUser) {
+          const c = (firstUser as any).content;
+          if (typeof c === "string") raw = c;
+          else if (Array.isArray(c)) raw = c.filter((p: any) => p?.type === "text" && typeof p.text === "string").map((p: any) => p.text).join(" ") || c.map((p: any) => p?.text || "").join(" ");
+          else if (Array.isArray((firstUser as any).parts)) raw = (firstUser as any).parts.filter((p: any) => p?.type === "text").map((p: any) => p.text).join(" ");
+          else if (typeof (firstUser as any).text === "string") raw = (firstUser as any).text;
+          else if (typeof firstUser.content === "object" && firstUser.content?.text) raw = firstUser.content.text;
+        }
+        if (!raw) {
+          const anyUser = messages.find((m: any) => m.role === "user");
+          raw = (anyUser as any)?.parts?.[0]?.text || (anyUser as any)?.content?.[0]?.text || (anyUser as any)?.text || "";
+        }
+        const text = raw.trim().slice(0, 48) || "New Chat";
         controller.appendText(text);
+        let effectiveId = remoteId;
+        if (String(effectiveId).startsWith("__LOCALID_")) {
+          const real = getCurrentThreadId?.();
+          if (real && !String(real).startsWith("__LOCALID_")) effectiveId = real;
+          else return;
+        }
         try {
-          await renameThread(resourceId, AGENT_ID, remoteId, text);
-          await queryClient.invalidateQueries({
-            queryKey: memoryKeys.threads(resourceId, AGENT_ID),
-          });
-        } catch {}
+          await renameThread(resourceId, AGENT_ID, effectiveId, text);
+          await queryClient.invalidateQueries({ queryKey: memoryKeys.threads(resourceId, AGENT_ID) });
+          await queryClient.refetchQueries({ queryKey: memoryKeys.threads(resourceId, AGENT_ID) });
+        } catch (e: any) {
+          const msg = String(e?.message || "");
+          if (msg.includes("Thread not found") || String((e as any)?.status) === "404") return;
+          console.warn("generateTitle rename failed", e);
+        }
       });
     },
 

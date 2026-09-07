@@ -1,5 +1,11 @@
+"use client";
+
 import { Assistant } from "./assistant";
 
 export default function Home() {
-  return <Assistant threadId={undefined} />;
+  return (
+    <div suppressHydrationWarning>
+      <Assistant threadId={undefined} />
+    </div>
+  );
 }

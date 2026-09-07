@@ -14,6 +14,7 @@ import {
 } from "@assistant-ui/react";
 import { memoryKeys, useInfiniteThreads } from "@/app/queries/memory.query";
 import { AGENT_ID, pinThread, RESOURCE_ID_KEY, unpinThread, listThreads } from "@/lib/mastra/memory-queries";
+import { authClient } from "@/lib/auth-client";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {
   ArchiveIcon,
@@ -39,6 +40,11 @@ import {
   type FC,
 } from "react";
 import { useHoverPrefetchThread } from "@/hooks/use-hover-prefetch-thread";
+
+function useResourceId() {
+  const { data: session } = (authClient as any).useSession();
+  return ((session as any)?.user?.id as string) || RESOURCE_ID_KEY;
+}
 
 export const ThreadList: FC = () => {
   return (
@@ -128,6 +134,7 @@ export const ThreadListItems: FC<ComponentPropsWithoutRef<"div"> & { searchQuery
 const InfiniteThreadLoader: FC = () => {
   const aui = useAui();
   const queryClient = useQueryClient();
+  const resourceId = useResourceId();
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [page, setPage] = useState(1);
   const hasFetchedRef = useRef(false);
@@ -141,8 +148,8 @@ const InfiniteThreadLoader: FC = () => {
           (async () => {
             try {
               const res: any = await queryClient.fetchQuery({
-                queryKey: memoryKeys.threads(RESOURCE_ID_KEY, AGENT_ID, page, 20),
-                queryFn: () => listThreads(RESOURCE_ID_KEY, AGENT_ID, { page, perPage: 20 }),
+                queryKey: memoryKeys.threads(resourceId, AGENT_ID, page, 20),
+                queryFn: () => listThreads(resourceId, AGENT_ID, { page, perPage: 20 }),
               } as any);
               const arr = Array.isArray(res) ? res : (res as any)?.threads ?? [];
               if (arr.length > 0) {
@@ -167,10 +174,11 @@ const InfiniteThreadLoader: FC = () => {
 const ServerThreadList: FC<{ searchQuery: string; className?: string }> = ({ searchQuery, className }) => {
   const debounced = useDebounced(searchQuery, 300);
   const aui = useAui();
-  const infinite = useInfiniteThreads(RESOURCE_ID_KEY, AGENT_ID, debounced, 20);
+  const resourceId = useResourceId();
+  const infinite = useInfiniteThreads(resourceId, AGENT_ID, debounced, 20);
   const pinnedQ = useQuery({
-    queryKey: [...memoryKeys.threads(RESOURCE_ID_KEY, AGENT_ID, 0, 100), "pinned"] as any,
-    queryFn: () => listThreads(RESOURCE_ID_KEY, AGENT_ID, { perPage: 100, metadata: { pinned: true } as any }),
+    queryKey: [...memoryKeys.threads(resourceId, AGENT_ID, 0, 100), "pinned"] as any,
+    queryFn: () => listThreads(resourceId, AGENT_ID, { perPage: 100, metadata: { pinned: true } as any }),
     staleTime: 10_000,
   });
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -198,6 +206,12 @@ const ServerThreadList: FC<{ searchQuery: string; className?: string }> = ({ sea
     try {
       (aui as unknown as { threads: { switchToThread: (id: string) => void } }).threads.switchToThread(id);
     } catch {}
+    if (!id.startsWith("__LOCALID_")) {
+      const expected = `/chat/${id}`;
+      if (typeof window !== "undefined" && window.location.pathname !== expected) {
+        window.history.pushState(null, "", expected);
+      }
+    }
   };
   if (infinite.isLoading) return <ThreadListSkeleton />;
   const merged = (() => {
@@ -537,6 +551,7 @@ const ThreadListItemMore: FC<{ onRename: () => void }> = ({ onRename }) => {
   const isPinned = useAuiState((s) => !!(s.threadListItem.custom as any)?.pinned);
   const aui = useAui();
   const queryClient = useQueryClient();
+  const resourceId = useResourceId();
   const [isToggling, setIsToggling] = useState(false);
   const handleTogglePin = async () => {
     if (isToggling) return;
@@ -549,9 +564,9 @@ const ThreadListItemMore: FC<{ onRename: () => void }> = ({ onRename }) => {
       if (typeof api.updateCustom === "function") {
         await api.updateCustom({ pinned: !isPinned });
       } else {
-        if (isPinned) await unpinThread(RESOURCE_ID_KEY, AGENT_ID, remoteId);
-        else await pinThread(RESOURCE_ID_KEY, AGENT_ID, remoteId);
-        await queryClient.invalidateQueries({ queryKey: memoryKeys.threads(RESOURCE_ID_KEY, AGENT_ID) });
+        if (isPinned) await unpinThread(resourceId, AGENT_ID, remoteId);
+        else await pinThread(resourceId, AGENT_ID, remoteId);
+        await queryClient.invalidateQueries({ queryKey: memoryKeys.threads(resourceId, AGENT_ID) });
         await queryClient.invalidateQueries({ queryKey: memoryKeys.thread(remoteId, AGENT_ID) });
       }
     } finally {

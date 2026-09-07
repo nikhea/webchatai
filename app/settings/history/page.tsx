@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useThreads } from "@/app/queries/memory.query";
 import { AGENT_ID, RESOURCE_ID_KEY } from "@/lib/mastra/memory-queries";
+import { authClient } from "@/lib/auth-client";
 
 type Chat = {
   id: string;
@@ -72,13 +73,36 @@ function formatDate(d?: string) {
 
 export default function HistoryPage() {
   const [rowSelection, setRowSelection] = React.useState({});
-  const [shared, setShared] = React.useState<Shared[]>(sharedInitial);
+  const [shared, setShared] = React.useState<Shared[]>([]);
   const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 10 });
+  const { data: session } = (authClient as any).useSession();
+  const resourceId = ((session as any)?.user?.id as string) || RESOURCE_ID_KEY;
 
-  const { data, isLoading, isFetching, isError } = useThreads(RESOURCE_ID_KEY, AGENT_ID, {
+  const { data, isLoading, isFetching, isError } = useThreads(resourceId, AGENT_ID, {
     page: pagination.pageIndex,
     perPage: pagination.pageSize,
   });
+
+  React.useEffect(() => {
+    fetch("/api/share")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list: any[]) => {
+        if (Array.isArray(list) && list.length) {
+          setShared(
+            list.map((s: any) => ({
+              id: s.id,
+              title: s.title,
+              link: `${window.location.origin}${s.url}`,
+              forks: 0,
+              views: s.viewCount ?? 0,
+              date: s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "",
+              expanded: true,
+            })),
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const threadsRaw: any = data as any;
   const rows: Chat[] = React.useMemo(() => {
@@ -145,7 +169,35 @@ export default function HistoryPage() {
     onPaginationChange: setPagination,
   });
 
+  const [copiedShared, setCopiedShared] = React.useState<string | null>(null);
   const toggleShared = (id: string) => setShared((s) => s.map((x) => (x.id === id ? { ...x, expanded: !x.expanded } : x)));
+  const copyShared = async (link: string, id: string) => {
+    await navigator.clipboard.writeText(link);
+    setCopiedShared(id);
+    setTimeout(() => setCopiedShared(null), 1500);
+  };
+  const unshare = async (id: string, token: string) => {
+    if (!confirm("Unshare this chat? Link will be revoked.")) return;
+    const t = token || id;
+    const urlToken = t.includes("/") ? t.split("/").pop()! : t;
+    await fetch(`/api/share/${urlToken}`, { method: "DELETE" });
+    setShared((s) => s.filter((x) => x.id !== id));
+  };
+  const refreshShares = async () => {
+    const res = await fetch("/api/share").then((r) => (r.ok ? r.json() : []));
+    if (Array.isArray(res))
+      setShared(
+        res.map((s: any) => ({
+          id: s.id,
+          title: s.title,
+          link: `${window.location.origin}${s.url}`,
+          forks: 0,
+          views: s.viewCount ?? 0,
+          date: s.createdAt ? formatDate(s.createdAt) : "",
+          expanded: true,
+        })),
+      );
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -217,10 +269,13 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      <p className="text-sm text-muted-foreground text-[rgb(231,208,221)]">Manage your shared threads here.</p>
+      <p className="text-sm text-muted-foreground text-[rgb(231,208,221)]">Manage your shared threads here. Views increment on each visit to the share link.</p>
 
       <div className="space-y-4 text-[rgb(249,248,251)]">
-        <h2 className="text-lg font-bold text-[rgb(249,248,251)] -mb-2">Shared Threads</h2>
+        <div className="flex items-center justify-between -mb-2">
+          <h2 className="text-lg font-bold text-[rgb(249,248,251)]">Shared Threads</h2>
+          <Button variant="ghost" size="sm" onClick={refreshShares} className="h-7 text-xs text-zinc-400 hover:text-zinc-100">Refresh</Button>
+        </div>
         <div className="overflow-hidden rounded-lg border border-zinc-800 bg-[#0b080b]">
           <Table>
             <TableHeader>
@@ -231,33 +286,46 @@ export default function HistoryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {shared.map((s) => (
-                <React.Fragment key={s.id}>
-                  <TableRow className="border-zinc-800 bg-[#0b080b] hover:bg-zinc-900/60">
-                    <TableCell className="px-3 py-2.5"><Checkbox className="border-zinc-700" /></TableCell>
-                    <TableCell className="px-3 py-2.5"><span className="text-sm text-[rgb(249,248,251)]">{s.title}</span></TableCell>
-                    <TableCell className="px-3 py-2.5 text-right">
-                      <button onClick={() => toggleShared(s.id)} className="grid size-6 place-items-center rounded text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200">
-                        {s.expanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
-                      </button>
-                    </TableCell>
-                  </TableRow>
-                  {s.expanded && s.link && (
+              {shared.length === 0 ? (
+                <TableRow className="border-zinc-800">
+                  <TableCell colSpan={3} className="px-3 py-8 text-center text-sm text-zinc-500">No shared chats yet. Use Share in the chat header.</TableCell>
+                </TableRow>
+              ) : (
+                shared.map((s) => (
+                  <React.Fragment key={s.id}>
                     <TableRow className="border-zinc-800 bg-[#0b080b] hover:bg-zinc-900/60">
-                      <TableCell className="px-3 py-2 pl-10"><Checkbox className="border-zinc-700" /></TableCell>
-                      <TableCell className="px-3 py-2"><a href={s.link} className="text-xs text-zinc-400 underline underline-offset-2 hover:text-zinc-200">{s.link}</a></TableCell>
-                      <TableCell className="px-3 py-2">
-                        <div className="flex items-center justify-end gap-3 text-xs text-zinc-400">
-                          <span className="inline-flex items-center gap-1"><GitFork className="size-3" />{s.forks}</span>
-                          <span className="inline-flex items-center gap-1"><Eye className="size-3" />{s.views}</span>
-                          <span className="whitespace-nowrap">{s.date}</span>
-                          <button className="grid size-6 place-items-center rounded hover:bg-zinc-800"><Pencil className="size-3" /></button>
-                        </div>
+                      <TableCell className="px-3 py-2.5"><Checkbox className="border-zinc-700" /></TableCell>
+                      <TableCell className="px-3 py-2.5"><span className="text-sm text-[rgb(249,248,251)]">{s.title}</span></TableCell>
+                      <TableCell className="px-3 py-2.5 text-right">
+                        <button onClick={() => toggleShared(s.id)} className="grid size-6 place-items-center rounded text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200">
+                          {s.expanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+                        </button>
                       </TableCell>
                     </TableRow>
-                  )}
-                </React.Fragment>
-              ))}
+                    {s.expanded && s.link && (
+                      <TableRow className="border-zinc-800 bg-[#0b080b] hover:bg-zinc-900/60">
+                        <TableCell className="px-3 py-2 pl-10"><Checkbox className="border-zinc-700" /></TableCell>
+                        <TableCell className="px-3 py-2">
+                          <a href={s.link} target="_blank" className="text-xs text-zinc-400 underline underline-offset-2 hover:text-zinc-200 break-all">{s.link}</a>
+                        </TableCell>
+                        <TableCell className="px-3 py-2">
+                          <div className="flex items-center justify-end gap-2 text-xs text-zinc-400">
+                            <span className="inline-flex items-center gap-1"><GitFork className="size-3" />{s.forks}</span>
+                            <span className="inline-flex items-center gap-1"><Eye className="size-3" />{s.views}</span>
+                            <span className="whitespace-nowrap">{s.date}</span>
+                            <button onClick={() => copyShared(s.link!, s.id)} className="grid size-6 place-items-center rounded hover:bg-zinc-800" title="Copy link">
+                              {copiedShared === s.id ? <span className="text-emerald-400 text-[10px]">✓</span> : <Eye className="size-3" />}
+                            </button>
+                            <button onClick={() => unshare(s.id, s.link!)} className="grid size-6 place-items-center rounded hover:bg-red-900/30 text-red-400" title="Unshare">
+                              <span className="text-[10px]">✕</span>
+                            </button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>

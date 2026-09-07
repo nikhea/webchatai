@@ -1,10 +1,17 @@
 import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SettingsNav } from "@/components/settings-nav";
 import { ModeToggle } from "@/components/mode-toggle";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import { SettingsSignOut } from "@/components/settings-signout";
+import { SettingsProfileCard } from "@/components/settings-profile-card";
 
-export default function SettingsLayout({ children }: { children: React.ReactNode }) {
+export default async function SettingsLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
+  const user = session?.user as any;
+  const initials = (user?.name || user?.email || "U").slice(0, 1).toUpperCase();
   return (
     <div className="relative min-h-dvh bg-transparent text-zinc-100">
       <div className="fixed inset-0 -z-50 bg-[rgb(19,19,20)] bg-gradient-to-b from-[#131314] to-[#21141e]" aria-hidden />
@@ -17,21 +24,22 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
           </Link>
           <div className="flex items-center gap-4">
             <ModeToggle />
-            <button className="text-sm font-semibold text-zinc-200 hover:text-white">Sign out</button>
+            <SettingsSignOut />
           </div>
         </header>
       </div>
 
       <div className="mx-auto flex max-w-[1280px] gap-8 px-6 py-8">
         <aside className="hidden w-[320px] shrink-0 flex-col gap-6 md:flex">
-          <div className="flex flex-col items-center text-center">
-            <Avatar className="size-28 bg-[#0e8a8a] text-white">
-              <AvatarFallback className="bg-[#0e8a8a] text-6xl font-light text-white">i</AvatarFallback>
-            </Avatar>
-            <h2 className="mt-4 truncate text-lg font-semibold">imonikhea ugbod...</h2>
-            <p className="truncate text-sm text-zinc-400">imonikheaugbodaga@gmail.com</p>
-            <span className="mt-2 rounded-full border border-zinc-700 bg-zinc-800 px-3 py-1 text-xs text-zinc-300">Free Plan</span>
-          </div>
+          <SettingsProfileCard
+            user={user}
+            initials={initials}
+            fallbackName={user?.name || "User"}
+            email={user?.email || ""}
+            role={(user?.role as string) || "user"}
+            username={user?.username}
+            image={user?.image}
+          />
 
           <div className="rounded-sm border border-zinc-800 bg-[#0b080b] p-4">
             <div className="mb-5 flex items-center justify-between">
