@@ -376,22 +376,12 @@ function toStringContent(v: any): string {
 export function BackendDocumentArtifact({ args, toolCallId, status }: { args: any; toolCallId: string; status?: any }) {
   const a: any = args ?? {};
   const rawContent = toStringContent(a.content);
-  const initial: DocumentState = {
-    title: toStringContent(a.title) || a.filename || "Document",
+  const state: DocumentState = {
+    title: toStringContent(a.title) || toStringContent(a.filename) || "Document",
     filename: toStringContent(a.filename) || "file.md",
     content: rawContent,
     language: a.language ? toStringContent(a.language) : detectLanguage(toStringContent(a.filename) || "file.md", undefined),
   };
   const streaming = status?.type === "running";
-  const [state] = unstable_useInteractable("document", {
-    id: toolCallId,
-    description: "File artifact from backend document tool",
-    stateSchema: documentSchema,
-    initialState: initial,
-  });
-  const safeState = state ?? initial;
-  const display = streaming ? initial : safeState;
-  const effectiveContent = streaming ? rawContent : toStringContent(safeState.content ?? rawContent);
-  const effective = { ...display, content: effectiveContent, title: toStringContent(display.title), filename: toStringContent(display.filename) };
-  return <ArtifactButton id={toolCallId} state={effective as any} streaming={streaming} />;
+  return <ArtifactButton id={toolCallId} state={state as any} streaming={streaming} />;
 }
