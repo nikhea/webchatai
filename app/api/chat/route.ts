@@ -1,5 +1,5 @@
 import { openai } from "@ai-sdk/openai";
-import { frontendTools, injectQuoteContext } from "@assistant-ui/react-ai-sdk";
+import { frontendTools, injectQuoteContext, unstable_injectInteractableContext } from "@assistant-ui/react-ai-sdk";
 import { type JSONSchema7, streamText, convertToModelMessages, tool, zodSchema, type UIMessage } from "ai";
 import { z } from "zod";
 
@@ -42,7 +42,9 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: openai.responses(modelName as any),
-    messages: await convertToModelMessages(injectQuoteContext(messages)),
+    messages: await convertToModelMessages(
+      unstable_injectInteractableContext(injectQuoteContext(messages) as any) as any,
+    ),
     system: finalSystem,
     tools: {
       ...frontendTools(tools ?? {}),

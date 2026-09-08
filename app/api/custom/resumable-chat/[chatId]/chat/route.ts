@@ -1,6 +1,10 @@
 import { handleChatStream, smoothStream, withSseHeartbeat } from "@mastra/ai-sdk";
 import { RequestContext, MASTRA_RESOURCE_ID_KEY } from "@mastra/core/request-context";
 import { createUIMessageStreamResponse } from "ai";
+import {
+  unstable_getInteractableSnapshots,
+  unstable_formatInteractableSnapshot,
+} from "@assistant-ui/react";
 import { mastra } from "@/src/mastra";
 import { auth } from "@/lib/auth";
 
@@ -56,7 +60,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ chatId:
     messages = [{ role: "user", parts: [{ type: "text", text: (body as any).prompt }] }];
   }
 
-  const prompt = getLatestUserText(messages);
+  const inject = (msgs: any[]) =>
+    msgs.map((m: any) => {
+      if (m.role !== "user") return m;
+      const snaps: any = (unstable_getInteractableSnapshots as any)(m);
+      if (!snaps?.length) return m;
+      const text = (snaps as any[]).map((e: any) => (unstable_formatInteractableSnapshot as any)(e)).join("\n");
+      if (Array.isArray(m.parts)) return { ...m, parts: [{ type: "text", text } as any, ...m.parts] };
+      if (typeof m.content === "string") return { ...m, content: text + "\n\n" + m.content };
+      return m;
+    });
+
+  const messagesWithSnapshots = inject(messages);
+  const prompt = getLatestUserText(messagesWithSnapshots);
   if (!prompt.trim()) {
     return new Response(JSON.stringify({ error: "prompt is required" }), { status: 400, headers: { "content-type": "application/json" } });
   }
@@ -91,7 +107,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ chatId:
     agentId: "working-memory-personal-assistant-agent",
     version: "v7",
     params: {
-      messages,
+      messages: messagesWithSnapshots,
       memory: { thread: chatId, resource: resourceId },
       requestContext,
     },
