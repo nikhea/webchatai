@@ -413,6 +413,7 @@ export function ArtifactShell({ children }: { children: React.ReactNode }) {
   const visible = !!openId;
   const panelId = openId ?? lastId;
   const [width, setWidth] = React.useState(480);
+  const [isDragging, setIsDragging] = React.useState(false);
   const dragging = React.useRef(false);
 
   React.useEffect(() => {
@@ -422,23 +423,24 @@ export function ArtifactShell({ children }: { children: React.ReactNode }) {
 
   const onPointerDown = React.useCallback((e: React.PointerEvent) => {
     dragging.current = true;
+    setIsDragging(true);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     const startX = e.clientX;
     const startW = width;
+    let lastW = startW;
     const onMove = (ev: PointerEvent) => {
       if (!dragging.current) return;
       const dx = startX - ev.clientX;
       const next = Math.min(800, Math.max(320, startW + dx));
+      lastW = next;
       setWidth(next);
     };
     const onUp = () => {
       dragging.current = false;
-      localStorage.setItem("artifact-width", String(width));
+      setIsDragging(false);
+      localStorage.setItem("artifact-width", String(lastW));
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
-      setWidth((w) => {
-        localStorage.setItem("artifact-width", String(w));
-        return w;
-      });
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
@@ -456,7 +458,8 @@ export function ArtifactShell({ children }: { children: React.ReactNode }) {
       <div className="min-w-0 flex-1 overflow-hidden">{children}</div>
       <div
         className={cn(
-          "relative hidden shrink-0 overflow-hidden border-l transition-all duration-300 ease-in-out lg:flex",
+          "relative hidden shrink-0 overflow-hidden border-l lg:flex",
+          isDragging ? "transition-none" : "transition-all duration-300 ease-in-out",
           visible ? "translate-x-0 opacity-100" : "w-0 translate-x-8 border-0 opacity-0",
         )}
         style={visible ? { width } : { width: 0 }}
