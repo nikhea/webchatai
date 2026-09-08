@@ -19,6 +19,7 @@ export const workingMemoryPersonalAssistantAgent = new Agent({
   id: "working-memory-personal-assistant-agent",
   name: "Working Memory Personal Assistant Agent",
   instructions: PERSONAL_ASSISTANT_INSTRUCTIONS,
+  editor: false,
   model: ({ requestContext }) => {
     const providerId = requestContext.get("providerId") as string | undefined;
     const modelName = requestContext.get("modelName") as string | undefined;
