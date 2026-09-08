@@ -9,7 +9,6 @@ import {
 import { FileText, Code2, FileJson, TableIcon, X, History, Maximize2, Globe, FileWarning, ChevronDown, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
@@ -122,53 +121,47 @@ export function ArtifactButton({
               <History className="size-3" /> Restore
             </Button>
           )}
-          <Collapsible open={expanded} onOpenChange={setExpanded}>
-            <CollapsibleTrigger
-              render={
-                <Button variant="ghost" size="xs" title={expanded ? "Collapse" : "Expand"}>
-                  <ChevronDown className={cn("size-3 transition-transform duration-200", expanded && "rotate-180")} />
-                  {expanded ? "Collapse" : "Expand"}
-                </Button>
-              }
-            />
-          </Collapsible>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => setExpanded((v) => !v)}
+            title={expanded ? "Collapse" : "Expand"}
+            aria-expanded={expanded}
+          >
+            <ChevronDown className={cn("size-3 transition-transform duration-200", expanded && "rotate-180")} />
+            {expanded ? "Collapse" : "Expand"}
+          </Button>
           <Button variant={isOpen ? "secondary" : "default"} size="xs" onClick={() => ctx?.toggle(id)}>
             {isOpen ? <Minimize2 className="size-3" /> : <Maximize2 className="size-3" />}
             {isOpen ? "Close" : "Open"}
           </Button>
         </div>
       </CardHeader>
-      <Collapsible open={expanded} onOpenChange={setExpanded}>
-        <CollapsibleContent className="overflow-hidden transition-all data-[ending-style]:opacity-0 data-[starting-style]:opacity-0">
-          <CardContent className="px-3 py-2">
-            {lang === "html" ? (
-              <HtmlPreview content={display.content} compact={!expanded} />
-            ) : lang === "pdf" ? (
-              <PdfPreview content={display.content} filename={display.filename} compact={!expanded} />
-            ) : lang === "csv" ? (
-              <CsvPreview content={display.content} />
-            ) : lang === "json" ? (
-              <JsonPreview content={display.content} />
-            ) : (
-              <pre className={cn(
-                "overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted/30 p-3 font-mono text-xs leading-4 transition-all duration-300",
+      <div className="overflow-hidden transition-all duration-300 ease-in-out">
+        <CardContent className="px-3 py-2">
+          {lang === "html" ? (
+            <HtmlPreview content={display.content} compact={!expanded} />
+          ) : lang === "pdf" ? (
+            <PdfPreview content={display.content} filename={display.filename} compact={!expanded} />
+          ) : lang === "csv" ? (
+            <CsvPreview content={display.content} />
+          ) : lang === "json" ? (
+            <JsonPreview content={display.content} />
+          ) : (
+            <div
+              className={cn(
+                "overflow-hidden transition-all duration-300 ease-in-out",
                 expanded ? "max-h-[500px]" : "max-h-[160px]",
-              )}>
+              )}
+            >
+              <pre className="overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted/30 p-3 font-mono text-xs leading-4">
                 {expanded ? display.content : preview}
                 {!expanded && display.content.length > 220 && "…"}
               </pre>
-            )}
-          </CardContent>
-        </CollapsibleContent>
-      </Collapsible>
-      {!expanded && lang !== "html" && lang !== "pdf" && (
-        <CardContent className="px-3 pb-3">
-          <pre className="max-h-[160px] overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted/30 p-3 font-mono text-xs leading-4">
-            {preview}
-            {display.content.length > 220 && "…"}
-          </pre>
+            </div>
+          )}
         </CardContent>
-      )}
+      </div>
     </Card>
   );
 }
