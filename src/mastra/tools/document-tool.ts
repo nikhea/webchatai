@@ -11,10 +11,35 @@ export const documentSchema = z.object({
 export const documentTool = createTool({
   id: "document",
   description:
-    "Create a file artifact that displays in the UI. Use this INSTEAD of a markdown code block whenever you show file contents, code, HTML, or PDF. Each call creates one artifact panel. The UI will render it with proper viewers (HTML iframe, PDF viewer, code, CSV table, JSON). Always use this for: report.md, sample.html, sample.pdf, data.json, app.tsx, tasks.csv, or any file display request. Provide title, filename, content, and language.",
+    "Create a file artifact that displays in the UI. Use this INSTEAD of a markdown code block whenever you show file contents, code, HTML, or PDF. Each call creates one artifact panel. The UI will render it with proper viewers (HTML iframe, PDF viewer, code, CSV table, JSON). Always use this for: report.md, sample.html, sample.pdf, data.json, app.tsx, tasks.csv, helloworld.html or any file display request. Provide title, filename, content, and language.",
   inputSchema: documentSchema,
   outputSchema: z.object({ success: z.boolean() }),
   execute: async (inputData) => {
-    return { success: true, filename: (inputData as any).filename };
+    const data: any = inputData as any;
+    let content = data.content;
+    if (Array.isArray(content)) {
+      content = content.map((c: any) => (typeof c === "string" ? c : JSON.stringify(c))).join("\n");
+    } else if (content && typeof content === "object") {
+      try {
+        content = JSON.stringify(content, null, 2);
+      } catch {
+        content = String(content);
+      }
+    } else if (content != null) {
+      content = String(content);
+    }
+    if ((!content || !String(content).trim()) && data.filename) {
+      try {
+        const fs = await import("fs/promises");
+        const path = await import("path");
+        const full = path.join(process.cwd(), "workspace", data.filename);
+        content = await fs.readFile(full, "utf-8").catch(() => "");
+        if (!content) {
+          const alt = path.join(process.cwd(), data.filename);
+          content = await fs.readFile(alt, "utf-8").catch(() => "");
+        }
+      } catch {}
+    }
+    return { success: true, filename: data.filename, contentLength: String(content ?? "").length };
   },
 });

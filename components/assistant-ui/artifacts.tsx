@@ -78,7 +78,14 @@ export function ArtifactButton({
   streaming?: boolean;
 }) {
   const ctx = useArtifactContext();
-  const display = version && !version.isLatest ? version.state : state;
+  const safeState = state ?? { title: "Untitled", filename: "untitled.md", content: "", language: "markdown" };
+  const displayRaw = version && !version.isLatest ? version.state : safeState;
+  const display = {
+    title: toStringContent((displayRaw as any).title),
+    filename: toStringContent((displayRaw as any).filename),
+    content: toStringContent((displayRaw as any).content),
+    language: (displayRaw as any).language ? toStringContent((displayRaw as any).language) : undefined,
+  } as DocumentState;
   const lang = detectLanguage(display.filename, display.language);
   const preview = display.content.slice(0, 220);
 
@@ -352,23 +359,39 @@ export function ArtifactShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+function toStringContent(v: any): string {
+  if (v == null) return "";
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) return v.map((c) => (typeof c === "string" ? c : JSON.stringify(c, null, 2))).join("\n");
+  if (typeof v === "object") {
+    try {
+      return JSON.stringify(v, null, 2);
+    } catch {
+      return String(v);
+    }
+  }
+  return String(v);
+}
+
 export function BackendDocumentArtifact({ args, toolCallId, status }: { args: any; toolCallId: string; status?: any }) {
   const a: any = args ?? {};
+  const rawContent = toStringContent(a.content);
   const initial: DocumentState = {
-    title: a.title ?? a.filename ?? "Document",
-    filename: a.filename ?? "file.md",
-    content: a.content ?? "",
-    language: a.language ?? detectLanguage(a.filename ?? "file.md", a.language),
+    title: toStringContent(a.title) || a.filename || "Document",
+    filename: toStringContent(a.filename) || "file.md",
+    content: rawContent,
+    language: a.language ? toStringContent(a.language) : detectLanguage(toStringContent(a.filename) || "file.md", undefined),
   };
   const streaming = status?.type === "running";
-  const [state, { setState }] = unstable_useInteractable("document", {
+  const [state] = unstable_useInteractable("document", {
     id: toolCallId,
     description: "File artifact from backend document tool",
     stateSchema: documentSchema,
     initialState: initial,
   });
-  const display = streaming && initial.content ? initial : state;
-  const effectiveContent = streaming ? initial.content : state.content;
-  const effective = { ...display, content: effectiveContent };
+  const safeState = state ?? initial;
+  const display = streaming ? initial : safeState;
+  const effectiveContent = streaming ? rawContent : toStringContent(safeState.content ?? rawContent);
+  const effective = { ...display, content: effectiveContent, title: toStringContent(display.title), filename: toStringContent(display.filename) };
   return <ArtifactButton id={toolCallId} state={effective as any} streaming={streaming} />;
 }
