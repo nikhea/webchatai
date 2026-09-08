@@ -41,6 +41,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ chatId:
   requestContext.set("providerId", providerId);
   requestContext.set("providerName", providerName);
   requestContext.set("webSearchEnabled", webSearchEnabled ?? false);
+  const { MASTRA_THREAD_ID_KEY: TID_KEY } = await import("@mastra/core/request-context");
+  (requestContext as any).set(TID_KEY, chatId);
   requestContext.set("threadId" as any, chatId);
 
   const rawCandidates = [
@@ -102,6 +104,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ chatId:
   const runId =
     (body as any).runId ?? ((body as any).messageId ? `${chatId}:${(body as any).messageId}` : `${chatId}:${crypto.randomUUID()}`);
   const resourceId = sessionUid || (chatParams as any)?.memory?.resource || "user-1234";
+  const { MASTRA_RESOURCE_ID_KEY: RID_KEY2 } = await import("@mastra/core/request-context");
+  (requestContext as any).set(RID_KEY2, resourceId);
 
   const stream = await handleChatStream({
     mastra,

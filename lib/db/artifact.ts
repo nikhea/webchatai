@@ -44,7 +44,15 @@ export async function upsertArtifact(params: {
   return inserted;
 }
 
-export async function listArtifactsByThread(threadId: string) {
+export async function listArtifactsByThread(threadId: string, userId?: string | null) {
+  if (userId) {
+    const { and } = await import("drizzle-orm");
+    return db
+      .select()
+      .from(artifact)
+      .where(and(eq(artifact.threadId, threadId), eq(artifact.userId, userId)))
+      .orderBy(artifact.createdAt);
+  }
   return db.select().from(artifact).where(eq(artifact.threadId, threadId)).orderBy(artifact.createdAt);
 }
 

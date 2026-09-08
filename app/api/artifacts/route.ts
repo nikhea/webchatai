@@ -6,7 +6,9 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const threadId = searchParams.get("threadId");
   if (!threadId) return NextResponse.json({ error: "threadId required" }, { status: 400 });
-  const rows = await listArtifactsByThread(threadId);
+  const session: any = await (auth as any).api.getSession({ headers: req.headers as any }).catch(() => null);
+  const userId = session?.user?.id ?? session?.data?.user?.id ?? null;
+  const rows = await listArtifactsByThread(threadId, userId);
   return NextResponse.json({ artifacts: rows });
 }
 

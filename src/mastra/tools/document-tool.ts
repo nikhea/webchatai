@@ -30,39 +30,35 @@ export const documentTool = createTool({
     }
     if ((!content || !String(content).trim()) && data.filename) {
       try {
-        const fs = await import("fs/promises");
-        const path = await import("path");
-        const full = path.join(process.cwd(), "workspace", data.filename);
-        content = await fs.readFile(full, "utf-8").catch(() => "");
+        if (ctx?.workspace) {
+          const fs: any = await ctx.workspace.resolveFilesystem({ requestContext: ctx.requestContext });
+          if (fs?.readFile) {
+            content = await fs.readFile(data.filename, "utf-8").catch(() => "");
+          }
+        }
         if (!content) {
-          const alt = path.join(process.cwd(), data.filename);
-          content = await fs.readFile(alt, "utf-8").catch(() => "");
+          const fs = await import("fs/promises");
+          const path = await import("path");
+          const full = path.join(process.cwd(), "workspace", data.filename);
+          content = await fs.readFile(full, "utf-8").catch(() => "");
         }
       } catch {}
     }
     try {
-      const threadId =
-        (ctx as any)?.threadId ??
-        (ctx as any)?.memory?.thread ??
-        (ctx as any)?.requestContext?.get?.("threadId") ??
-        (inputData as any)?.threadId ??
-        "unknown";
+      const { MASTRA_THREAD_ID_KEY, MASTRA_RESOURCE_ID_KEY } = await import("@mastra/core/request-context");
+      const rc: any = (ctx as any)?.requestContext;
+      const threadId = rc?.get?.(MASTRA_THREAD_ID_KEY) ?? (ctx as any)?.threadId ?? (ctx as any)?.memory?.thread ?? "unknown";
+      const resourceId = rc?.get?.(MASTRA_RESOURCE_ID_KEY) ?? null;
       const toolCallId =
         (ctx as any)?.toolCallId ??
         (ctx as any)?.toolCall?.id ??
         (inputData as any)?.toolCallId ??
         `tool-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const { upsertArtifact } = await import("@/lib/db/artifact");
-      const { auth } = await import("@/lib/auth");
-      let userId: string | null = null;
-      try {
-        const req: any = (ctx as any)?.requestContext;
-        userId = req?.get?.("userId") ?? null;
-      } catch {}
       await upsertArtifact({
         threadId: String(threadId),
         toolCallId: String(toolCallId),
-        userId,
+        userId: resourceId ? String(resourceId) : null,
         title: String(data.title ?? data.filename ?? "Document"),
         filename: String(data.filename ?? "file.md"),
         content: String(content ?? ""),

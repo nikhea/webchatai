@@ -16,6 +16,7 @@ import { tavilyTools } from "../tools/tavilt-tool";
 import { redisCache, redisPubSub } from "../utils/redis"
 import { chatBotMemory } from "../memory/chatbot.memory";
 import { Workspace, LocalSandbox, LocalFilesystem } from "@mastra/core/workspace";
+import { MASTRA_THREAD_ID_KEY, MASTRA_RESOURCE_ID_KEY } from "@mastra/core/request-context";
 
 export const workingMemoryPersonalAssistantAgent = new Agent({
   id: "working-memory-personal-assistant-agent",
@@ -23,12 +24,25 @@ export const workingMemoryPersonalAssistantAgent = new Agent({
   instructions: PERSONAL_ASSISTANT_INSTRUCTIONS,
   editor: false,
   workspace: new Workspace({
-    filesystem: new LocalFilesystem({
-      basePath: "./workspace",
-    }),
-    sandbox: new LocalSandbox({
-      workingDirectory: "./workspace",
-    }),
+    filesystem: ({ requestContext }) => {
+      const threadId = (requestContext.get(MASTRA_THREAD_ID_KEY) as string) ?? "default";
+      const resourceId = (requestContext.get(MASTRA_RESOURCE_ID_KEY) as string) ?? "anonymous";
+      const safeThread = String(threadId).replace(/[^a-zA-Z0-9-_]/g, "_");
+      const safeResource = String(resourceId).replace(/[^a-zA-Z0-9-_]/g, "_");
+      return new LocalFilesystem({ basePath: `./workspace/${safeResource}/${safeThread}` });
+    },
+    sandbox: async ({ requestContext }) => {
+      const threadId = (requestContext.get(MASTRA_THREAD_ID_KEY) as string) ?? "default";
+      const resourceId = (requestContext.get(MASTRA_RESOURCE_ID_KEY) as string) ?? "anonymous";
+      const safeThread = String(threadId).replace(/[^a-zA-Z0-9-_]/g, "_");
+      const safeResource = String(resourceId).replace(/[^a-zA-Z0-9-_]/g, "_");
+      return new LocalSandbox({ workingDirectory: `./workspace/${safeResource}/${safeThread}` });
+    },
+    sandboxCacheKey: ({ requestContext }) => {
+      const threadId = (requestContext.get(MASTRA_THREAD_ID_KEY) as string) ?? "default";
+      const resourceId = (requestContext.get(MASTRA_RESOURCE_ID_KEY) as string) ?? "anonymous";
+      return `${String(resourceId)}:${String(threadId)}`;
+    },
   }),
   model: ({ requestContext }) => {
     const providerId = requestContext.get("providerId") as string | undefined;
