@@ -542,23 +542,43 @@ export function BackendDocumentArtifact({ args, toolCallId, status }: { args: an
     language: a.language ? toStringContent(a.language) : detectLanguage(toStringContent(a.filename) || "file.md", undefined),
   };
   const streaming = status?.type === "running";
+  const getThreadId = React.useCallback(() => {
+    try {
+      const m = window.location.pathname.match(/\/chat\/(.+)/);
+      if (m?.[1] && m[1] !== "undefined" && !m[1].startsWith("__LOCALID_")) return m[1];
+    } catch {}
+    try {
+      const v = localStorage.getItem("artifact-last-thread");
+      if (v) return v;
+    } catch {}
+    return "unknown";
+  }, []);
+  React.useEffect(() => {
+    try {
+      const tid = getThreadId();
+      if (tid && tid !== "unknown") localStorage.setItem("artifact-last-thread", tid);
+    } catch {}
+  }, [getThreadId]);
   React.useEffect(() => {
     if (streaming || !toolCallId || !state.content) return;
-    try {
-      const threadId = window.location.pathname.match(/\/chat\/(.+)/)?.[1] ?? "unknown";
-      fetch("/api/artifacts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          threadId,
-          toolCallId,
-          title: state.title,
-          filename: state.filename,
-          content: state.content,
-          language: state.language,
-        }),
-      }).catch(() => {});
-    } catch {}
-  }, [toolCallId, state.title, state.filename, state.content, state.language, streaming]);
+    const t = setTimeout(() => {
+      try {
+        const threadId = getThreadId();
+        fetch("/api/artifacts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            threadId,
+            toolCallId,
+            title: state.title,
+            filename: state.filename,
+            content: state.content,
+            language: state.language,
+          }),
+        }).catch(() => {});
+      } catch {}
+    }, 300);
+    return () => clearTimeout(t);
+  }, [toolCallId, state.title, state.filename, state.content, state.language, streaming, getThreadId]);
   return <ArtifactButton id={toolCallId} state={state as any} streaming={streaming} />;
 }
