@@ -6,11 +6,10 @@ import {
   unstable_useInteractable,
   unstable_useInteractableVersions,
 } from "@assistant-ui/react";
-import { FileText, Code2, FileJson, TableIcon, X, History, Maximize2, Globe, FileWarning, ChevronDown, Minimize2 } from "lucide-react";
+import { FileText, Code2, FileJson, TableIcon, X, History, Maximize2, Globe, FileWarning, ChevronDown, Minimize2, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
@@ -413,28 +412,105 @@ export function ArtifactShell({ children }: { children: React.ReactNode }) {
   }, [openId]);
   const visible = !!openId;
   const panelId = openId ?? lastId;
+  const [width, setWidth] = React.useState(480);
+  const dragging = React.useRef(false);
+
+  React.useEffect(() => {
+    const saved = typeof window !== "undefined" ? Number(localStorage.getItem("artifact-width") ?? 480) : 480;
+    if (saved >= 320 && saved <= 800) setWidth(saved);
+  }, []);
+
+  const onPointerDown = React.useCallback((e: React.PointerEvent) => {
+    dragging.current = true;
+    const startX = e.clientX;
+    const startW = width;
+    const onMove = (ev: PointerEvent) => {
+      if (!dragging.current) return;
+      const dx = startX - ev.clientX;
+      const next = Math.min(800, Math.max(320, startW + dx));
+      setWidth(next);
+    };
+    const onUp = () => {
+      dragging.current = false;
+      localStorage.setItem("artifact-width", String(width));
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      setWidth((w) => {
+        localStorage.setItem("artifact-width", String(w));
+        return w;
+      });
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }, [width]);
+
+  React.useEffect(() => {
+    const onMove = (ev: PointerEvent) => {
+      if (!dragging.current) return;
+    };
+    return () => {};
+  }, []);
 
   return (
     <div className="flex h-full w-full">
       <div className="min-w-0 flex-1 overflow-hidden">{children}</div>
       <div
         className={cn(
-          "hidden shrink-0 overflow-hidden border-l transition-all duration-300 ease-in-out lg:block",
-          visible ? "w-[480px] max-w-[50vw] translate-x-0 opacity-100" : "w-0 translate-x-8 border-0 opacity-0",
+          "relative hidden shrink-0 overflow-hidden border-l transition-all duration-300 ease-in-out lg:flex",
+          visible ? "translate-x-0 opacity-100" : "w-0 translate-x-8 border-0 opacity-0",
         )}
+        style={visible ? { width } : { width: 0 }}
       >
-        {panelId && (
-          <div className="h-full w-[480px] max-w-[50vw]">
-            <ArtifactPanel id={panelId} />
-          </div>
-        )}
-      </div>
-      <Sheet open={visible} onOpenChange={(o) => { if (!o) ctx?.close(); }}>
-        <SheetContent side="right" className="w-full p-0 sm:max-w-[480px]">
-          <SheetTitle className="sr-only">Artifact</SheetTitle>
+        <div
+          onPointerDown={onPointerDown}
+          className="absolute left-0 top-0 z-10 flex h-full w-2 cursor-col-resize touch-none items-center justify-center bg-transparent hover:bg-primary/10 active:bg-primary/20"
+          title="Drag to resize"
+        >
+          <GripVertical className="size-3 text-muted-foreground/60" />
+        </div>
+        <div className="h-full w-full pl-2" style={{ width }}>
           {panelId && <ArtifactPanel id={panelId} />}
-        </SheetContent>
-      </Sheet>
+        </div>
+      </div>
+      <div
+        className={cn(
+          "fixed inset-0 z-50 flex justify-end bg-black/20 backdrop-blur-[1px] transition-opacity duration-200 lg:hidden",
+          visible ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
+        onClick={() => ctx?.close()}
+      >
+        <div
+          className={cn(
+            "relative flex h-full w-[92%] max-w-[480px] flex-col bg-background shadow-xl transition-transform duration-300 ease-in-out",
+            visible ? "translate-x-0" : "translate-x-full",
+          )}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            onPointerDown={(e) => {
+              const startX = e.clientX;
+              const el = e.currentTarget.parentElement as HTMLElement | null;
+              const startW = el?.getBoundingClientRect().width ?? 480;
+              const onMove = (ev: PointerEvent) => {
+                const dx = startX - ev.clientX;
+                const viewport = window.innerWidth;
+                const next = Math.min(viewport * 0.92, Math.max(320, startW + dx));
+                if (el) el.style.width = `${next}px`;
+              };
+              const onUp = () => {
+                window.removeEventListener("pointermove", onMove);
+                window.removeEventListener("pointerup", onUp);
+              };
+              window.addEventListener("pointermove", onMove);
+              window.addEventListener("pointerup", onUp);
+            }}
+            className="absolute left-0 top-0 z-10 flex h-full w-2 cursor-col-resize items-center justify-center"
+          >
+            <GripVertical className="size-3 text-muted-foreground/60" />
+          </div>
+          {panelId && <ArtifactPanel id={panelId} />}
+        </div>
+      </div>
     </div>
   );
 }
