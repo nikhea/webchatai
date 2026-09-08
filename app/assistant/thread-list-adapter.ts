@@ -27,24 +27,6 @@ import { queryPersister } from "@/lib/query-persister";
 
 function toUIMessage(m: any) {
   const raw = m.content ?? m.parts ?? m.text ?? "";
-  let text = "";
-  if (typeof raw === "string") text = raw;
-  else if (typeof m.text === "string") text = m.text;
-  else if (Array.isArray(raw)) {
-    text = raw
-      .filter((p: any) => p?.type === "text" && typeof p.text === "string")
-      .map((p: any) => p.text)
-      .join("\n");
-    if (!text) text = raw.map((p: any) => p?.text ?? "").join("\n");
-  } else if (raw?.parts) {
-    text = raw.parts
-      .filter((p: any) => p.type === "text")
-      .map((p: any) => p.text)
-      .join("\n");
-    if (!text && typeof raw.content === "string") text = raw.content;
-  } else if (typeof raw?.text === "string") text = raw.text;
-  else if (typeof raw?.content === "string") text = raw.content;
-
   const r = String(m.role ?? "").toLowerCase();
   const contentMeta =
     (m as any).content?.metadata ??
@@ -59,6 +41,15 @@ function toUIMessage(m: any) {
     !!(m as any).metadata?.signal ||
     !!(m as any).content?.metadata?.signal;
   if (isSignal) {
+    let text = "";
+    if (typeof raw === "string") text = raw;
+    else if (typeof (raw as any)?.content === "string") text = (raw as any).content;
+    else if (Array.isArray((raw as any)?.parts)) {
+      text = (raw as any).parts
+        .filter((p: any) => p.type === "text")
+        .map((p: any) => p.text)
+        .join("\n");
+    } else if (typeof m.text === "string") text = m.text;
     return {
       id: m.id ?? crypto.randomUUID(),
       role: "assistant" as const,
@@ -77,11 +68,58 @@ function toUIMessage(m: any) {
       },
     } as any;
   }
+
+  let rawParts: any[] = [];
+  if (raw && typeof raw === "object" && Array.isArray((raw as any).parts)) rawParts = (raw as any).parts;
+  else if (Array.isArray(raw)) rawParts = raw as any[];
+  else if (Array.isArray((m as any).parts)) rawParts = (m as any).parts;
+  else if (typeof raw === "string" && raw.trim()) rawParts = [{ type: "text", text: raw }];
+
+  const uiParts: any[] = [];
+  for (const p of rawParts) {
+    if (!p || typeof p !== "object") continue;
+    if (p.type === "text" && typeof p.text === "string") {
+      uiParts.push({ type: "text", text: p.text });
+    } else if (p.type === "reasoning" && typeof p.reasoning === "string") {
+      uiParts.push({ type: "reasoning", text: p.reasoning, ...p });
+    } else if (p.type === "tool-invocation" && p.toolInvocation) {
+      const inv: any = p.toolInvocation;
+      const state = inv.state;
+      const statusType = state === "result" ? "complete" : state === "error" ? "incomplete" : "running";
+      uiParts.push({
+        type: "tool-call",
+        toolCallId: inv.toolCallId ?? p.toolCallId ?? crypto.randomUUID(),
+        toolName: inv.toolName ?? p.toolName ?? "unknown",
+        args: inv.args ?? {},
+        argsText: inv.args ? JSON.stringify(inv.args, null, 2) : undefined,
+        result: inv.result,
+        status: { type: statusType } as any,
+      });
+    } else if (p.type === "tool-call") {
+      uiParts.push(p);
+    } else if (p.type === "data" || (typeof p.type === "string" && p.type.startsWith("data-"))) {
+      if (p.type === "data-om-status" || p.type === "data-workspace-metadata" || p.type === "data-om-buffering-start" || p.type === "step-start") continue;
+      uiParts.push(p);
+    } else if (p.type === "step-start") {
+      continue;
+    } else if (typeof p.text === "string") {
+      uiParts.push({ type: "text", text: String(p.text) });
+    } else if (typeof p.content === "string") {
+      uiParts.push({ type: "text", text: String(p.content) });
+    }
+  }
+
+  if (uiParts.length === 0) {
+    if (typeof raw === "string" && raw.trim()) uiParts.push({ type: "text", text: raw });
+    else if (typeof m.text === "string" && m.text.trim()) uiParts.push({ type: "text", text: m.text });
+    else if (typeof (raw as any)?.content === "string" && (raw as any).content.trim()) uiParts.push({ type: "text", text: (raw as any).content });
+  }
+
   const role = r === "user" ? "user" : r === "system" ? "system" : "assistant";
   return {
     id: m.id ?? crypto.randomUUID(),
     role,
-    parts: text ? [{ type: "text", text }] : [],
+    parts: uiParts,
     createdAt: m.createdAt ? new Date(m.createdAt) : new Date(),
     metadata: mergedMeta,
   } as any;
