@@ -41,6 +41,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ chatId:
   requestContext.set("providerId", providerId);
   requestContext.set("providerName", providerName);
   requestContext.set("webSearchEnabled", webSearchEnabled ?? false);
+  requestContext.set("threadId" as any, chatId);
 
   const rawCandidates = [
     body.messages,

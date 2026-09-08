@@ -11,7 +11,8 @@ function isPublicPath(pathname: string) {
     pathname.startsWith("/api/tts") ||
     pathname.startsWith("/api/mastra") ||
     pathname.startsWith("/api/custom") ||
-    pathname.startsWith("/api/chat")
+    pathname.startsWith("/api/chat") ||
+    pathname.startsWith("/api/artifacts")
   )
     return true;
   return false;

@@ -41,8 +41,17 @@ export const documentTool = createTool({
       } catch {}
     }
     try {
-      const threadId = (ctx as any)?.threadId ?? (ctx as any)?.memory?.thread ?? (inputData as any)?.threadId ?? "unknown";
-      const toolCallId = (ctx as any)?.toolCallId ?? `tool-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const threadId =
+        (ctx as any)?.threadId ??
+        (ctx as any)?.memory?.thread ??
+        (ctx as any)?.requestContext?.get?.("threadId") ??
+        (inputData as any)?.threadId ??
+        "unknown";
+      const toolCallId =
+        (ctx as any)?.toolCallId ??
+        (ctx as any)?.toolCall?.id ??
+        (inputData as any)?.toolCallId ??
+        `tool-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const { upsertArtifact } = await import("@/lib/db/artifact");
       const { auth } = await import("@/lib/auth");
       let userId: string | null = null;
