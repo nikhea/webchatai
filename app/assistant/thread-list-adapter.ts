@@ -26,7 +26,21 @@ import { memoryKeys } from "@/app/queries/memory.query";
 import { queryPersister } from "@/lib/query-persister";
 
 function toUIMessage(m: any) {
-  const raw = m.content ?? m.parts ?? m.text ?? "";
+  let raw: any = m.content ?? m.parts ?? m.text ?? "";
+  if (typeof raw === "string") {
+    const t = raw.trim();
+    if (t.startsWith("{") && t.includes('"parts"')) {
+      try {
+        const parsed = JSON.parse(t);
+        if (parsed && typeof parsed === "object") raw = parsed;
+      } catch {}
+    } else if (t.startsWith("{") && t.includes('"format"')) {
+      try {
+        const parsed = JSON.parse(t);
+        if (parsed && typeof parsed === "object") raw = parsed;
+      } catch {}
+    }
+  }
   const r = String(m.role ?? "").toLowerCase();
   const contentMeta =
     (m as any).content?.metadata ??
