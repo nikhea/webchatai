@@ -245,9 +245,9 @@ export const Assistant = ({
   const toolkit = defineToolkit({
     document: unstable_interactableTool({
       description:
-        "A file artifact that displays different files. Creates an inline preview and a full-size editable panel. Use it to show markdown, code, JSON, or CSV files from the workspace. Each call creates one artifact; update_document edits it.",
+        "Create a file artifact. Use whenever you display file contents, code, HTML, or PDF. Args are title, filename, content, language.",
       stateSchema: documentSchema,
-      render: ({ state, setState, version, id, streaming }) => (
+      render: ({ state, version, id, streaming }) => (
         <ArtifactButton id={id} state={state as any} version={version as any} streaming={streaming} />
       ),
     }),

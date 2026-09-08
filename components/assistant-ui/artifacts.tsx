@@ -351,3 +351,24 @@ export function ArtifactShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+export function BackendDocumentArtifact({ args, toolCallId, status }: { args: any; toolCallId: string; status?: any }) {
+  const a: any = args ?? {};
+  const initial: DocumentState = {
+    title: a.title ?? a.filename ?? "Document",
+    filename: a.filename ?? "file.md",
+    content: a.content ?? "",
+    language: a.language ?? detectLanguage(a.filename ?? "file.md", a.language),
+  };
+  const streaming = status?.type === "running";
+  const [state, { setState }] = unstable_useInteractable("document", {
+    id: toolCallId,
+    description: "File artifact from backend document tool",
+    stateSchema: documentSchema,
+    initialState: initial,
+  });
+  const display = streaming && initial.content ? initial : state;
+  const effectiveContent = streaming ? initial.content : state.content;
+  const effective = { ...display, content: effectiveContent };
+  return <ArtifactButton id={toolCallId} state={effective as any} streaming={streaming} />;
+}

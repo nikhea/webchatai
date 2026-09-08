@@ -10,6 +10,7 @@ import { MAIN_MODEL, TITLE_GENERATION_MODEL } from "../constants/model.constant"
 import { PERSONAL_ASSISTANT_INSTRUCTIONS } from "../instructions/chatbot.instruction";
 import { askUserTool, submitPlanTool, webFetchTool } from "@mastra/core/tools";
 import { weatherTool } from "../tools/weather-tool";
+import { documentTool } from "../tools/document-tool";
 import { TokenUsageProcessor } from "../processors/token-usage-processor";
 import { tavilyTools } from "../tools/tavilt-tool";
 import { redisCache, redisPubSub } from "../utils/redis"
@@ -61,10 +62,10 @@ export const workingMemoryPersonalAssistantAgent = new Agent({
     const webSearchEnabled = requestContext.get("webSearchEnabled");
     const tools: Record<string, any> = {};
     if (webSearchEnabled) {
-      // tools.web_search = tavilyTools.tavilySearch;
       tools.web_fetch = webFetchTool;
     }
     tools.get_weather = weatherTool;
+    tools.document = documentTool;
     return tools;
   },
   // tools: {

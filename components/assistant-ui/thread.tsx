@@ -23,6 +23,7 @@ import {
   ToolGroupTrigger,
 } from "@/components/assistant-ui/tool-group";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
+import { BackendDocumentArtifact } from "@/components/assistant-ui/artifacts";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -969,10 +970,18 @@ const AssistantMessage: FC = () => {
                           return <MarkdownText />;
                         case "reasoning":
                           return <Reasoning {...part} />;
-                        case "tool-call":
-                          return (
-                            part.toolUI ?? <ToolFallbackComponent {...part} />
-                          );
+                        case "tool-call": {
+                          const anyPart: any = part as any;
+                          const tName: string = anyPart.toolName ?? anyPart.name ?? "";
+                          if (tName === "document") {
+                            const args = anyPart.args ?? anyPart.input ?? {};
+                            const tid = anyPart.toolCallId ?? anyPart.id ?? String(anyPart.index ?? "doc");
+                            return (
+                              <BackendDocumentArtifact args={args} toolCallId={tid} status={anyPart.status} />
+                            );
+                          }
+                          return part.toolUI ?? <ToolFallbackComponent {...part} />;
+                        }
                         case "data": {
                           const anyPart: any = part as any;
                           const n: string = anyPart.name ?? "";
@@ -1102,8 +1111,16 @@ const AssistantMessage: FC = () => {
                   return <MarkdownText />;
                 case "reasoning":
                   return <Reasoning {...part} />;
-                case "tool-call":
+                case "tool-call": {
+                  const anyPart2: any = part as any;
+                  const tName2: string = anyPart2.toolName ?? anyPart2.name ?? "";
+                  if (tName2 === "document") {
+                    const args2 = anyPart2.args ?? anyPart2.input ?? {};
+                    const tid2 = anyPart2.toolCallId ?? anyPart2.id ?? String(anyPart2.index ?? "doc");
+                    return <BackendDocumentArtifact args={args2} toolCallId={tid2} status={anyPart2.status} />;
+                  }
                   return part.toolUI ?? <ToolFallbackComponent {...part} />;
+                }
                 case "data": {
                   const anyPart2: any = part as any;
                   const n2: string = anyPart2.name ?? "";
