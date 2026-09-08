@@ -14,7 +14,7 @@ import { TokenUsageProcessor } from "../processors/token-usage-processor";
 import { tavilyTools } from "../tools/tavilt-tool";
 import { redisCache, redisPubSub } from "../utils/redis"
 import { chatBotMemory } from "../memory/chatbot.memory";
-import { Workspace, LocalSandbox } from "@mastra/core/workspace";
+import { Workspace, LocalSandbox, LocalFilesystem } from "@mastra/core/workspace";
 
 export const workingMemoryPersonalAssistantAgent = new Agent({
   id: "working-memory-personal-assistant-agent",
@@ -22,6 +22,9 @@ export const workingMemoryPersonalAssistantAgent = new Agent({
   instructions: PERSONAL_ASSISTANT_INSTRUCTIONS,
   editor: false,
   workspace: new Workspace({
+    filesystem: new LocalFilesystem({
+      basePath: "./workspace",
+    }),
     sandbox: new LocalSandbox({
       workingDirectory: "./workspace",
     }),
