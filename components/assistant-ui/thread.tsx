@@ -923,7 +923,7 @@ const AssistantMessage: FC = () => {
                   <MessagePrimitive.GroupedParts
                     groupBy={groupPartByType({
                       reasoning: ["group-chainOfThought", "group-reasoning"],
-                      "tool-call": ["group-chainOfThought", "standalone-tool-call"],
+                      "tool-call": ["group-chainOfThought", "group-tool"],
                       "standalone-tool-call": [],
                     })}
                   >
@@ -1070,7 +1070,7 @@ const AssistantMessage: FC = () => {
           <MessagePrimitive.GroupedParts
             groupBy={groupPartByType({
               reasoning: ["group-chainOfThought", "group-reasoning"],
-              "tool-call": ["group-chainOfThought", "standalone-tool-call"],
+              "tool-call": ["group-chainOfThought", "group-tool"],
               "standalone-tool-call": [],
             })}
           >

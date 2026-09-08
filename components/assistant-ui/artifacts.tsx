@@ -6,7 +6,14 @@ import {
   unstable_useInteractable,
   unstable_useInteractableVersions,
 } from "@assistant-ui/react";
-import { FileText, Code2, FileJson, TableIcon, X, History, Maximize2, Globe, FileWarning } from "lucide-react";
+import { FileText, Code2, FileJson, TableIcon, X, History, Maximize2, Globe, FileWarning, ChevronDown, Minimize2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 export const documentSchema = z.object({
   title: z.string().describe("Display title for the artifact"),
@@ -51,6 +58,7 @@ const ArtifactContext = React.createContext<{
   openId: string | null;
   open: (id: string) => void;
   close: () => void;
+  toggle: (id: string) => void;
 } | null>(null);
 
 export function useArtifactContext() {
@@ -60,7 +68,12 @@ export function useArtifactContext() {
 export function ArtifactProvider({ children }: { children: React.ReactNode }) {
   const [openId, setOpenId] = React.useState<string | null>(null);
   const value = React.useMemo(
-    () => ({ openId, open: setOpenId, close: () => setOpenId(null) }),
+    () => ({
+      openId,
+      open: (id: string) => setOpenId(id),
+      close: () => setOpenId(null),
+      toggle: (id: string) => setOpenId((prev) => (prev === id ? null : id)),
+    }),
     [openId],
   );
   return <ArtifactContext.Provider value={value}>{children}</ArtifactContext.Provider>;
@@ -87,41 +100,76 @@ export function ArtifactButton({
     language: (displayRaw as any).language ? toStringContent((displayRaw as any).language) : undefined,
   } as DocumentState;
   const lang = detectLanguage(display.filename, display.language);
+  const isOpen = ctx?.openId === id;
+  const [expanded, setExpanded] = React.useState(false);
   const preview = display.content.slice(0, 220);
 
   return (
-    <div className="my-2 w-full rounded-xl border bg-card text-card-foreground shadow-sm">
-      <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
-        <div className="flex items-center gap-2 min-w-0">
+    <Card className="my-2 w-full gap-0 py-0 shadow-sm">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 border-b px-3 py-2">
+        <div className="flex min-w-0 items-center gap-2">
           <FileIcon filename={display.filename} />
           <span className="truncate text-sm font-medium">{display.title}</span>
           <span className="truncate text-xs text-muted-foreground">{display.filename}</span>
           <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wide">{lang}</span>
-          {streaming && <span className="text-xs text-muted-foreground animate-pulse">streaming…</span>}
+          {streaming && <span className="animate-pulse text-xs text-muted-foreground">streaming…</span>}
           {version && !version.isLatest && <span className="text-xs text-amber-600">version snapshot</span>}
+          {isOpen && <span className="text-xs text-emerald-600">open</span>}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {version && !version.isLatest && (
-            <button
-              onClick={version.restore}
-              className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-accent"
-            >
+            <Button variant="outline" size="xs" onClick={version.restore}>
               <History className="size-3" /> Restore
-            </button>
+            </Button>
           )}
-          <button
-            onClick={() => ctx?.open(id)}
-            className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs text-primary-foreground hover:bg-primary/90"
-          >
-            <Maximize2 className="size-3" /> Open
-          </button>
+          <Collapsible open={expanded} onOpenChange={setExpanded}>
+            <CollapsibleTrigger
+              render={
+                <Button variant="ghost" size="xs" title={expanded ? "Collapse" : "Expand"}>
+                  <ChevronDown className={cn("size-3 transition-transform duration-200", expanded && "rotate-180")} />
+                  {expanded ? "Collapse" : "Expand"}
+                </Button>
+              }
+            />
+          </Collapsible>
+          <Button variant={isOpen ? "secondary" : "default"} size="xs" onClick={() => ctx?.toggle(id)}>
+            {isOpen ? <Minimize2 className="size-3" /> : <Maximize2 className="size-3" />}
+            {isOpen ? "Close" : "Open"}
+          </Button>
         </div>
-      </div>
-      <pre className="max-h-[160px] overflow-auto whitespace-pre-wrap break-words p-3 text-xs leading-4 bg-muted/30">
-        {preview}
-        {display.content.length > 220 && "…"}
-      </pre>
-    </div>
+      </CardHeader>
+      <Collapsible open={expanded} onOpenChange={setExpanded}>
+        <CollapsibleContent className="overflow-hidden transition-all data-[ending-style]:opacity-0 data-[starting-style]:opacity-0">
+          <CardContent className="px-3 py-2">
+            {lang === "html" ? (
+              <HtmlPreview content={display.content} compact={!expanded} />
+            ) : lang === "pdf" ? (
+              <PdfPreview content={display.content} filename={display.filename} compact={!expanded} />
+            ) : lang === "csv" ? (
+              <CsvPreview content={display.content} />
+            ) : lang === "json" ? (
+              <JsonPreview content={display.content} />
+            ) : (
+              <pre className={cn(
+                "overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted/30 p-3 font-mono text-xs leading-4 transition-all duration-300",
+                expanded ? "max-h-[500px]" : "max-h-[160px]",
+              )}>
+                {expanded ? display.content : preview}
+                {!expanded && display.content.length > 220 && "…"}
+              </pre>
+            )}
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
+      {!expanded && lang !== "html" && lang !== "pdf" && (
+        <CardContent className="px-3 pb-3">
+          <pre className="max-h-[160px] overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted/30 p-3 font-mono text-xs leading-4">
+            {preview}
+            {display.content.length > 220 && "…"}
+          </pre>
+        </CardContent>
+      )}
+    </Card>
   );
 }
 
@@ -162,16 +210,16 @@ export function ArtifactPanel({ id }: { id: string }) {
   const lang = detectLanguage(state.filename, state.language);
 
   return (
-    <aside className="flex h-full w-full flex-col border-l bg-background">
+    <aside className="flex h-full w-full animate-in flex-col bg-background slide-in-from-right-8 duration-300 fade-in">
       <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex min-w-0 items-center gap-2">
           <FileIcon filename={state.filename} />
-          <input
+          <Input
             value={state.title}
             onChange={(e) => setState((p) => ({ ...p, title: e.target.value }))}
-            className="max-w-[14rem] truncate bg-transparent text-sm font-semibold outline-none focus:underline"
+            className="h-7 max-w-[14rem] border-0 bg-transparent px-1 text-sm font-semibold shadow-none focus-visible:ring-1"
           />
-          <span className="hidden sm:inline truncate text-xs text-muted-foreground">{state.filename}</span>
+          <span className="hidden truncate text-xs text-muted-foreground sm:inline">{state.filename}</span>
         </div>
         <div className="flex items-center gap-1">
           {versions.length > 1 && (
@@ -190,27 +238,24 @@ export function ArtifactPanel({ id }: { id: string }) {
               ))}
             </select>
           )}
-          <button
-            onClick={() => setEditing((v) => !v)}
-            className="rounded-md border px-2 py-1 text-xs hover:bg-accent"
-          >
+          <Button variant="outline" size="xs" onClick={() => setEditing((v) => !v)}>
             {editing ? "Preview" : "Edit"}
-          </button>
-          <button onClick={() => ctx?.close()} className="grid size-7 place-items-center rounded-md hover:bg-accent">
+          </Button>
+          <Button variant="ghost" size="icon-xs" onClick={() => ctx?.close()} title="Close panel">
             <X className="size-4" />
-          </button>
+          </Button>
         </div>
       </div>
 
       <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-1.5 text-xs">
         <label className="text-muted-foreground">File</label>
-        <input
+        <Input
           value={state.filename}
           onChange={(e) => {
             const filename = e.target.value;
             setState((p) => ({ ...p, filename, language: detectLanguage(filename, p.language) }));
           }}
-          className="flex-1 rounded border bg-background px-1.5 py-0.5 text-xs"
+          className="h-6 flex-1 text-xs"
         />
         <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase">{lang}</span>
       </div>
@@ -240,7 +285,8 @@ export function ArtifactPanel({ id }: { id: string }) {
         )}
       </div>
 
-      <div className="border-t px-3 py-2 text-[11px] text-muted-foreground">
+      <Separator />
+      <div className="px-3 py-2 text-[11px] text-muted-foreground">
         Shared state · <code>update_document</code> edits this file · versioned · persists with thread history
       </div>
     </aside>
@@ -290,7 +336,7 @@ function JsonPreview({ content }: { content: string }) {
   }
 }
 
-function HtmlPreview({ content }: { content: string }) {
+function HtmlPreview({ content, compact }: { content: string; compact?: boolean }) {
   if (!content.trim()) return <div className="text-sm text-muted-foreground">Empty HTML</div>;
   return (
     <div className="flex flex-col gap-2">
@@ -298,7 +344,7 @@ function HtmlPreview({ content }: { content: string }) {
         <iframe
           srcDoc={content}
           sandbox="allow-scripts allow-same-origin"
-          className="h-[420px] w-full"
+          className={cn("w-full transition-all duration-300", compact ? "h-[200px]" : "h-[420px]")}
           title="HTML preview"
         />
       </div>
@@ -310,7 +356,7 @@ function HtmlPreview({ content }: { content: string }) {
   );
 }
 
-function PdfPreview({ content, filename }: { content: string; filename: string }) {
+function PdfPreview({ content, filename, compact }: { content: string; filename: string; compact?: boolean }) {
   const src = React.useMemo(() => {
     const c = content.trim();
     if (!c) return null;
@@ -330,7 +376,7 @@ function PdfPreview({ content, filename }: { content: string; filename: string }
     return (
       <div className="flex flex-col gap-2">
         <div className="overflow-hidden rounded-md border bg-white">
-          <iframe src={src} className="h-[520px] w-full" title={`PDF ${filename}`} />
+          <iframe src={src} className={cn("w-full transition-all duration-300", compact ? "h-[200px]" : "h-[520px]")} title={`PDF ${filename}`} />
         </div>
         <a href={src} download={filename} className="inline-flex w-fit items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-accent">
           Download {filename}
@@ -345,7 +391,10 @@ function PdfPreview({ content, filename }: { content: string; filename: string }
         PDF content is raw text/markdown. For rendered PDF, provide a data URL, https URL, or base64 PDF string.
       </div>
       <pre className="whitespace-pre-wrap break-words rounded-md bg-muted p-3 font-mono text-sm">{content}</pre>
-      <button
+      <Button
+        variant="outline"
+        size="xs"
+        className="w-fit"
         onClick={() => {
           const blob = new Blob([content], { type: "text/plain" });
           const url = URL.createObjectURL(blob);
@@ -355,27 +404,44 @@ function PdfPreview({ content, filename }: { content: string; filename: string }
           a.click();
           URL.revokeObjectURL(url);
         }}
-        className="inline-flex w-fit rounded-md border px-2 py-1 text-xs hover:bg-accent"
       >
         Download {filename}
-      </button>
+      </Button>
     </div>
   );
 }
 
 export function ArtifactShell({ children }: { children: React.ReactNode }) {
   const ctx = useArtifactContext();
-  const openId = ctx?.openId;
-  if (!openId) return <>{children}</>;
+  const openId = ctx?.openId ?? null;
+  const [lastId, setLastId] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    if (openId) setLastId(openId);
+  }, [openId]);
+  const visible = !!openId;
+  const panelId = openId ?? lastId;
+
   return (
     <div className="flex h-full w-full">
-      <div className="flex-1 min-w-0 overflow-hidden">{children}</div>
-      <div className="w-[480px] max-w-[50vw] shrink-0 overflow-hidden max-lg:hidden">
-        <ArtifactPanel id={openId} />
+      <div className="min-w-0 flex-1 overflow-hidden">{children}</div>
+      <div
+        className={cn(
+          "hidden shrink-0 overflow-hidden border-l transition-all duration-300 ease-in-out lg:block",
+          visible ? "w-[480px] max-w-[50vw] translate-x-0 opacity-100" : "w-0 translate-x-8 border-0 opacity-0",
+        )}
+      >
+        {panelId && (
+          <div className="h-full w-[480px] max-w-[50vw]">
+            <ArtifactPanel id={panelId} />
+          </div>
+        )}
       </div>
-      <div className="fixed inset-0 z-50 bg-background lg:hidden">
-        <ArtifactPanel id={openId} />
-      </div>
+      <Sheet open={visible} onOpenChange={(o) => { if (!o) ctx?.close(); }}>
+        <SheetContent side="right" className="w-full p-0 sm:max-w-[480px]">
+          <SheetTitle className="sr-only">Artifact</SheetTitle>
+          {panelId && <ArtifactPanel id={panelId} />}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
