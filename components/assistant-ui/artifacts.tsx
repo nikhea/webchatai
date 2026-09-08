@@ -137,6 +137,27 @@ export function ArtifactPanel({ id }: { id: string }) {
   const [editing, setEditing] = React.useState(false);
 
   React.useEffect(() => setEditing(false), [id]);
+  React.useEffect(() => {
+    if (!state.content || state.content === emptyDocument.content) return;
+    const t = setTimeout(() => {
+      try {
+        const threadId = window.location.pathname.match(/\/chat\/(.+)/)?.[1] ?? "unknown";
+        fetch("/api/artifacts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            threadId,
+            toolCallId: id,
+            title: state.title,
+            filename: state.filename,
+            content: state.content,
+            language: state.language,
+          }),
+        }).catch(() => {});
+      } catch {}
+    }, 500);
+    return () => clearTimeout(t);
+  }, [id, state.title, state.filename, state.content, state.language]);
 
   const lang = detectLanguage(state.filename, state.language);
 
@@ -383,5 +404,23 @@ export function BackendDocumentArtifact({ args, toolCallId, status }: { args: an
     language: a.language ? toStringContent(a.language) : detectLanguage(toStringContent(a.filename) || "file.md", undefined),
   };
   const streaming = status?.type === "running";
+  React.useEffect(() => {
+    if (streaming || !toolCallId || !state.content) return;
+    try {
+      const threadId = window.location.pathname.match(/\/chat\/(.+)/)?.[1] ?? "unknown";
+      fetch("/api/artifacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          threadId,
+          toolCallId,
+          title: state.title,
+          filename: state.filename,
+          content: state.content,
+          language: state.language,
+        }),
+      }).catch(() => {});
+    } catch {}
+  }, [toolCallId, state.title, state.filename, state.content, state.language, streaming]);
   return <ArtifactButton id={toolCallId} state={state as any} streaming={streaming} />;
 }

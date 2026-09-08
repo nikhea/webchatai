@@ -8,6 +8,6 @@ Ship the beta by Friday. Metrics look strong.
 - NPS: 72
 
 ## Next Steps
-- [ ] Finalize docs
+- [x] Finalize docs
 - [ ] Run load tests
 - [ ] Schedule demo

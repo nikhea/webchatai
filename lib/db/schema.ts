@@ -284,3 +284,31 @@ export const userProviderKey = pgTable(
 export const userProviderKeyRelations = relations(userProviderKey, ({ one }) => ({
   user: one(user, { fields: [userProviderKey.userId], references: [user.id] }),
 }));
+
+export const artifact = pgTable(
+  "artifact",
+  {
+    id: text("id").primaryKey(),
+    threadId: text("thread_id").notNull(),
+    toolCallId: text("tool_call_id").notNull().unique(),
+    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    title: text("title").notNull(),
+    filename: text("filename").notNull(),
+    content: text("content").notNull(),
+    language: text("language"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("artifact_thread_idx").on(table.threadId),
+    index("artifact_user_idx").on(table.userId),
+    index("artifact_tool_call_idx").on(table.toolCallId),
+  ],
+);
+
+export const artifactRelations = relations(artifact, ({ one }) => ({
+  user: one(user, { fields: [artifact.userId], references: [user.id] }),
+}));

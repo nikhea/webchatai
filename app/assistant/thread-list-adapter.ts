@@ -402,6 +402,34 @@ export function createMastraThreadListAdapter(
                     new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
                 );
                 const uiMessages = arr.map(toUIMessage);
+                try {
+                  const artRes: any = await fetch(`/api/artifacts?threadId=${threadId}`).then((r) => r.json()).catch(() => null);
+                  const artifacts: any[] = artRes?.artifacts ?? [];
+                  const existingIds = new Set(
+                    uiMessages.flatMap((m: any) => (m.parts ?? []).filter((p: any) => p.type === "tool-call").map((p: any) => p.toolCallId)),
+                  );
+                  for (const a of artifacts) {
+                    if (existingIds.has(a.toolCallId)) continue;
+                    uiMessages.push({
+                      id: `artifact-${a.toolCallId}`,
+                      role: "assistant",
+                      parts: [
+                        {
+                          type: "tool-call",
+                          toolCallId: a.toolCallId,
+                          toolName: "document",
+                          args: { title: a.title, filename: a.filename, content: a.content, language: a.language },
+                          argsText: JSON.stringify({ title: a.title, filename: a.filename, content: a.content, language: a.language }, null, 2),
+                          result: { success: true },
+                          status: { type: "complete" },
+                        },
+                      ],
+                      createdAt: a.updatedAt ? new Date(a.updatedAt) : new Date(),
+                      metadata: { fromDrizzle: true },
+                    } as any);
+                  }
+                  if (artifacts.length) uiMessages.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+                } catch {}
                 const items = uiMessages.map((msg: any, idx: number) => ({
                   message: msg,
                   parentId: idx === 0 ? null : ((uiMessages[idx - 1] as any).id ?? null),

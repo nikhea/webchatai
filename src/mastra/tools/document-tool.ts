@@ -14,7 +14,7 @@ export const documentTool = createTool({
     "Create a file artifact that displays in the UI. Use this INSTEAD of a markdown code block whenever you show file contents, code, HTML, or PDF. Each call creates one artifact panel. The UI will render it with proper viewers (HTML iframe, PDF viewer, code, CSV table, JSON). Always use this for: report.md, sample.html, sample.pdf, data.json, app.tsx, tasks.csv, helloworld.html or any file display request. Provide title, filename, content, and language.",
   inputSchema: documentSchema,
   outputSchema: z.object({ success: z.boolean() }),
-  execute: async (inputData) => {
+  execute: async (inputData, ctx: any) => {
     const data: any = inputData as any;
     let content = data.content;
     if (Array.isArray(content)) {
@@ -39,6 +39,28 @@ export const documentTool = createTool({
           content = await fs.readFile(alt, "utf-8").catch(() => "");
         }
       } catch {}
+    }
+    try {
+      const threadId = (ctx as any)?.threadId ?? (ctx as any)?.memory?.thread ?? (inputData as any)?.threadId ?? "unknown";
+      const toolCallId = (ctx as any)?.toolCallId ?? `tool-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const { upsertArtifact } = await import("@/lib/db/artifact");
+      const { auth } = await import("@/lib/auth");
+      let userId: string | null = null;
+      try {
+        const req: any = (ctx as any)?.requestContext;
+        userId = req?.get?.("userId") ?? null;
+      } catch {}
+      await upsertArtifact({
+        threadId: String(threadId),
+        toolCallId: String(toolCallId),
+        userId,
+        title: String(data.title ?? data.filename ?? "Document"),
+        filename: String(data.filename ?? "file.md"),
+        content: String(content ?? ""),
+        language: data.language ? String(data.language) : null,
+      });
+    } catch (e) {
+      console.warn("[document] drizzle persist failed", e);
     }
     return { success: true, filename: data.filename, contentLength: String(content ?? "").length };
   },
