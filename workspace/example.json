@@ -1,0 +1,5 @@
+{
+  "greeting": "Hello world!",
+  "items": [1, 2, 3],
+  "valid": true
+}

@@ -10,51 +10,76 @@ import { MAIN_MODEL, TITLE_GENERATION_MODEL } from "../constants/model.constant"
 import { PERSONAL_ASSISTANT_INSTRUCTIONS } from "../instructions/chatbot.instruction";
 import { askUserTool, submitPlanTool, webFetchTool } from "@mastra/core/tools";
 import { weatherTool } from "../tools/weather-tool";
+import { documentTool } from "../tools/document-tool";
 import { TokenUsageProcessor } from "../processors/token-usage-processor";
 import { tavilyTools } from "../tools/tavilt-tool";
 import { redisCache, redisPubSub } from "../utils/redis"
+import { chatBotMemory } from "../memory/chatbot.memory";
+import { Workspace, LocalSandbox, LocalFilesystem } from "@mastra/core/workspace";
+import { MASTRA_THREAD_ID_KEY, MASTRA_RESOURCE_ID_KEY } from "@mastra/core/request-context";
 
 export const workingMemoryPersonalAssistantAgent = new Agent({
   id: "working-memory-personal-assistant-agent",
   name: "Working Memory Personal Assistant Agent",
-  // @ts-ignore - editor overrides handled by MastraEditor, instructions/tools remain code defaults
   instructions: PERSONAL_ASSISTANT_INSTRUCTIONS,
-  // @ts-ignore
-  editor: {
-    instructions: true,
-    tools: true,
-  },
+  editor: false,
+  workspace: new Workspace({
+    filesystem: ({ requestContext }) => {
+      const threadId = (requestContext.get(MASTRA_THREAD_ID_KEY) as string) ?? "default";
+      const resourceId = (requestContext.get(MASTRA_RESOURCE_ID_KEY) as string) ?? "anonymous";
+      const safeThread = String(threadId).replace(/[^a-zA-Z0-9-_]/g, "_");
+      const safeResource = String(resourceId).replace(/[^a-zA-Z0-9-_]/g, "_");
+      return new LocalFilesystem({ basePath: `./workspace/${safeResource}/${safeThread}` });
+    },
+    sandbox: async ({ requestContext }) => {
+      const threadId = (requestContext.get(MASTRA_THREAD_ID_KEY) as string) ?? "default";
+      const resourceId = (requestContext.get(MASTRA_RESOURCE_ID_KEY) as string) ?? "anonymous";
+      const safeThread = String(threadId).replace(/[^a-zA-Z0-9-_]/g, "_");
+      const safeResource = String(resourceId).replace(/[^a-zA-Z0-9-_]/g, "_");
+      return new LocalSandbox({ workingDirectory: `./workspace/${safeResource}/${safeThread}` });
+    },
+    sandboxCacheKey: ({ requestContext }) => {
+      const threadId = (requestContext.get(MASTRA_THREAD_ID_KEY) as string) ?? "default";
+      const resourceId = (requestContext.get(MASTRA_RESOURCE_ID_KEY) as string) ?? "anonymous";
+      return `${String(resourceId)}:${String(threadId)}`;
+    },
+  }),
   model: ({ requestContext }) => {
     const providerId = requestContext.get("providerId") as string | undefined;
     const modelName = requestContext.get("modelName") as string | undefined;
+    const byokKeys = (requestContext.get("byokKeys") as Record<string, string> | undefined) || {};
+    const byokKey = providerId ? byokKeys[providerId] || byokKeys[providerId.toLowerCase()] : undefined;
+    if (byokKey) {
+      try {
+        const { createOpenAI } = require("@ai-sdk/openai");
+        const baseURLs: Record<string, string> = {
+          groq: "https://api.groq.com/openai/v1",
+          openrouter: "https://openrouter.ai/api/v1",
+          cerebras: "https://api.cerebras.ai/v1",
+          nvidia: "https://integrate.api.nvidia.com/v1",
+          ollama: "https://api.ollama.ai/v1",
+        };
+        const baseURL = baseURLs[providerId!.toLowerCase()];
+        const provider = baseURL ? createOpenAI({ apiKey: byokKey, baseURL }) : createOpenAI({ apiKey: byokKey });
+        const modelId = modelName || "gpt-4o-mini";
+        return provider(modelId) as any;
+      } catch {}
+    }
     if (providerId && modelName) return `${providerId}-cloud/${modelName}` as any;
     if (modelName && modelName.includes("/")) return modelName as any;
     return (MAIN_MODEL ?? "openai/gpt-4o-mini") as any;
   },
-  memory: new Memory({
-    options: {
-      lastMessages: 15,
-      generateTitle: {
-        model: TITLE_GENERATION_MODEL,
-      },
-      workingMemory: {
-        enabled: true,
-        useStateSignals: true,
-        scope: "resource",
-        template: userProfileWorkingMemoryTemplateString,
-      },
-    },
-  }),
+  memory:chatBotMemory,
   outputProcessors: [new TokenUsageProcessor()],
   // @ts-ignore
   tools: ({ requestContext }: any) => {
     const webSearchEnabled = requestContext.get("webSearchEnabled");
     const tools: Record<string, any> = {};
     if (webSearchEnabled) {
-      // tools.web_search = tavilyTools.tavilySearch;
       tools.web_fetch = webFetchTool;
     }
     tools.get_weather = weatherTool;
+    tools.document = documentTool;
     return tools;
   },
   // tools: {

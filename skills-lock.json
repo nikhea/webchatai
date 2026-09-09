@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "aceternity-ui": {
+      "source": "secondsky/claude-skills",
+      "sourceType": "github",
+      "skillPath": "plugins/aceternity-ui/skills/aceternity-ui/SKILL.md",
+      "computedHash": "e92b2ec7cfd5d27ba88b0a42079aa8c7fddb506d1e0f65d7fa198756a7894a21"
+    },
     "assistant-ui": {
       "source": "assistant-ui/skills",
       "sourceType": "github",
@@ -18,6 +24,12 @@
       "sourceType": "github",
       "skillPath": "assistant-ui/skills/copilots/SKILL.md",
       "computedHash": "ba7eeef102cedea56d6444704cdfc7911a39d8b4bdfa8544b330af054fe5d9dd"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "89496d5dd00f4810205f351759594fc2742bf8eea85a2f2b2d1de59f4bd91576"
     },
     "markdown": {
       "source": "assistant-ui/skills",

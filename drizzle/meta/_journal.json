@@ -15,6 +15,20 @@
       "when": 1788681106948,
       "tag": "0001_gifted_the_executioner",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788713612986,
+      "tag": "0002_concerned_power_pack",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788880318020,
+      "tag": "0003_chubby_orphan",
+      "breakpoints": true
     }
   ]
 }

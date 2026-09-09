@@ -9,7 +9,16 @@ import {
   defineToolkit,
   Tools,
   type ToolApprovalResponse,
+  unstable_Interactables,
+  unstable_interactableTool,
 } from "@assistant-ui/react";
+import { z } from "zod";
+import {
+  ArtifactProvider,
+  ArtifactShell,
+  ArtifactButton,
+  documentSchema,
+} from "@/components/assistant-ui/artifacts";
 import { KokoroFastAPIAdapter } from "@/lib/kokoro-fastapi-adapter";
 import {
   useChatRuntime,
@@ -234,6 +243,14 @@ export const Assistant = ({
   });
 
   const toolkit = defineToolkit({
+    document: unstable_interactableTool({
+      description:
+        "Create a file artifact. Use whenever you display file contents, code, HTML, or PDF. Args are title, filename, content, language.",
+      stateSchema: documentSchema,
+      render: ({ state, version, id, streaming }) => (
+        <ArtifactButton id={id} state={state as any} version={version as any} streaming={streaming} />
+      ),
+    }),
     get_weather: {
       type: "backend",
       render: ({ args, approval, respondToApproval, result }) => {
@@ -317,6 +334,7 @@ export const Assistant = ({
   });
 
   const config = AuiConfig({
+    unstable_interactables: unstable_Interactables(),
     tools: Tools({ toolkit }),
     suggestions: Suggestions([
       {
@@ -339,28 +357,32 @@ export const Assistant = ({
 
   return (
     <AssistantRuntimeProvider runtime={runtime} config={config}>
-      <HotkeysProvider>
-        <SidebarProvider>
-          <AssistantHotkeys
-            onSearchOpen={() => setSearchOpen(true)}
-            currentThreadId={currentThreadId}
-            currentThreadIdRef={currentThreadIdRef}
-            setCurrentThreadId={setCurrentThreadId}
-            adapter={adapter}
-            resourceId={resourceId}
-          />
-          <div className="flex h-dvh w-full pr-0.5">
-            <ThreadListSidebar onSearchOpen={() => setSearchOpen(true)} />
-            <SidebarInset className="relative">
-              <AssistantHeader onSearchOpen={() => setSearchOpen(true)} />
-              <div className="flex-1 overflow-hidden">
-                <Thread />
-              </div>
-              <ThreadSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+      <ArtifactProvider>
+        <HotkeysProvider>
+          <SidebarProvider>
+            <AssistantHotkeys
+              onSearchOpen={() => setSearchOpen(true)}
+              currentThreadId={currentThreadId}
+              currentThreadIdRef={currentThreadIdRef}
+              setCurrentThreadId={setCurrentThreadId}
+              adapter={adapter}
+              resourceId={resourceId}
+            />
+            <div className="flex h-dvh w-full pr-0.5">
+              <ThreadListSidebar onSearchOpen={() => setSearchOpen(true)} />
+              <SidebarInset className="relative">
+                <AssistantHeader onSearchOpen={() => setSearchOpen(true)} />
+                <div className="flex-1 overflow-hidden">
+                  <ArtifactShell>
+                    <Thread />
+                  </ArtifactShell>
+                </div>
+                <ThreadSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
             </SidebarInset>
-          </div>
-        </SidebarProvider>
-      </HotkeysProvider>
+            </div>
+          </SidebarProvider>
+        </HotkeysProvider>
+      </ArtifactProvider>
     </AssistantRuntimeProvider>
   );
 };

@@ -1,6 +1,10 @@
 import { handleChatStream, smoothStream, withSseHeartbeat } from "@mastra/ai-sdk";
 import { RequestContext, MASTRA_RESOURCE_ID_KEY } from "@mastra/core/request-context";
 import { createUIMessageStreamResponse } from "ai";
+import {
+  unstable_getInteractableSnapshots,
+  unstable_formatInteractableSnapshot,
+} from "@assistant-ui/react";
 import { mastra } from "@/src/mastra";
 import { auth } from "@/lib/auth";
 
@@ -37,6 +41,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ chatId:
   requestContext.set("providerId", providerId);
   requestContext.set("providerName", providerName);
   requestContext.set("webSearchEnabled", webSearchEnabled ?? false);
+  const { MASTRA_THREAD_ID_KEY: TID_KEY } = await import("@mastra/core/request-context");
+  (requestContext as any).set(TID_KEY, chatId);
+  requestContext.set("threadId" as any, chatId);
 
   const rawCandidates = [
     body.messages,
@@ -56,7 +63,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ chatId:
     messages = [{ role: "user", parts: [{ type: "text", text: (body as any).prompt }] }];
   }
 
-  const prompt = getLatestUserText(messages);
+  const inject = (msgs: any[]) =>
+    msgs.map((m: any) => {
+      if (m.role !== "user") return m;
+      const snaps: any = (unstable_getInteractableSnapshots as any)(m);
+      if (!snaps?.length) return m;
+      const text = (snaps as any[]).map((e: any) => (unstable_formatInteractableSnapshot as any)(e)).join("\n");
+      if (Array.isArray(m.parts)) return { ...m, parts: [{ type: "text", text } as any, ...m.parts] };
+      if (typeof m.content === "string") return { ...m, content: text + "\n\n" + m.content };
+      return m;
+    });
+
+  const messagesWithSnapshots = inject(messages);
+  const prompt = getLatestUserText(messagesWithSnapshots);
   if (!prompt.trim()) {
     return new Response(JSON.stringify({ error: "prompt is required" }), { status: 400, headers: { "content-type": "application/json" } });
   }
@@ -64,16 +83,36 @@ export async function POST(req: Request, { params }: { params: Promise<{ chatId:
   const session = await (auth as any).api.getSession({ headers: req.headers as any }).catch(() => null);
   const sessionUid = (session as any)?.user?.id || (session as any)?.data?.user?.id;
   if (sessionUid) requestContext.set(MASTRA_RESOURCE_ID_KEY as any, sessionUid);
+  if (sessionUid) {
+    try {
+      const { db } = await import("@/lib/db");
+      const { userProviderKey } = await import("@/lib/db/schema");
+      const { eq } = await import("drizzle-orm");
+      const { decrypt } = await import("@/lib/byok/crypto");
+      const rows = await (db as any).select().from(userProviderKey).where(eq(userProviderKey.userId, sessionUid));
+      const map: Record<string, string> = {};
+      for (const r of rows as any[]) {
+        try {
+          const dec = decrypt(r.encryptedKey);
+          map[r.provider] = dec;
+          map[r.provider.toLowerCase()] = dec;
+        } catch {}
+      }
+      if (Object.keys(map).length) requestContext.set("byokKeys" as any, map);
+    } catch {}
+  }
   const runId =
     (body as any).runId ?? ((body as any).messageId ? `${chatId}:${(body as any).messageId}` : `${chatId}:${crypto.randomUUID()}`);
   const resourceId = sessionUid || (chatParams as any)?.memory?.resource || "user-1234";
+  const { MASTRA_RESOURCE_ID_KEY: RID_KEY2 } = await import("@mastra/core/request-context");
+  (requestContext as any).set(RID_KEY2, resourceId);
 
   const stream = await handleChatStream({
     mastra,
     agentId: "working-memory-personal-assistant-agent",
     version: "v7",
     params: {
-      messages,
+      messages: messagesWithSnapshots,
       memory: { thread: chatId, resource: resourceId },
       requestContext,
     },

@@ -1,0 +1,14 @@
+{
+  "project": "webchatai",
+  "version": "0.1.0",
+  "metrics": {
+    "users": 12400,
+    "retention": 0.68,
+    "nps": 72
+  },
+  "tasks": [
+    { "id": "1", "title": "Finalize docs", "done": false },
+    { "id": "2", "title": "Run load tests", "done": true },
+    { "id": "3", "title": "Schedule demo", "done": false }
+  ]
+}
