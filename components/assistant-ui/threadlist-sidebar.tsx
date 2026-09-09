@@ -71,7 +71,7 @@ export function ThreadListSidebar({
             >
               <PanelLeftIcon className="size-4" />
             </button>
-            <span className="text-pink-300/90 text-[22px] font-semibold tracking-tight">T3.chat</span>
+            <span className="text-foreground text-[20px] font-black tracking-tighter">NOVA</span>
             <button
               type="button"
               aria-label="New chat"
@@ -84,7 +84,7 @@ export function ThreadListSidebar({
           <button
             type="button"
             onClick={() => (aui as unknown as { threads: { switchToNewThread: () => void } }).threads.switchToNewThread()}
-            className="flex w-full items-center justify-center rounded-xl border border-pink-900/30 bg-[#3a0a2a]/60 px-4 py-2.5 text-sm font-medium text-pink-200/90 hover:bg-[#4a0f35]/70 hover:text-pink-100 transition-colors"
+            className="flex w-full items-center justify-center rounded-xl border border-border bg-foreground px-4 py-2.5 text-sm font-medium text-background hover:opacity-90 transition-opacity"
           >
             New Chat
           </button>

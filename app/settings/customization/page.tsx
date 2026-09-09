@@ -29,7 +29,7 @@ export default function CustomizationPage() {
         if (Array.isArray(d.promptBlocks)) setPromptBlocks(d.promptBlocks);
       })
       .catch(() => {});
-    const saved = typeof window !== "undefined" ? localStorage.getItem("t3-customization") : null;
+    const saved = typeof window !== "undefined" ? localStorage.getItem("nova-customization") : null;
     if (saved) {
       try {
         const p = JSON.parse(saved);
@@ -45,7 +45,7 @@ export default function CustomizationPage() {
     setSaving(true);
     setMsg(null);
     const payload = { name, role, traits, about, instructions: instructions || undefined };
-    localStorage.setItem("t3-customization", JSON.stringify({ name, role, traits, about }));
+    localStorage.setItem("nova-customization", JSON.stringify({ name, role, traits, about }));
     try {
       const res = await fetch("/api/customization", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error("Failed");
@@ -83,7 +83,7 @@ export default function CustomizationPage() {
 
   return (
     <div className="w-full max-w-[720px]">
-      <h1 className="text-[28px] font-bold tracking-tight text-white">Customize T3 Chat</h1>
+      <h1 className="text-[28px] font-bold tracking-tight text-white">Customize NOVA</h1>
 
       <div className="mt-8 space-y-7">
         <div>
@@ -116,7 +116,7 @@ export default function CustomizationPage() {
         </div>
 
         <div>
-          <label className="mb-2 block text-[13px] font-medium text-zinc-100">What should T3 Chat call you?</label>
+          <label className="mb-2 block text-[13px] font-medium text-zinc-100">What should NOVA call you?</label>
           <div className="relative">
             <input
               value={name}
@@ -146,7 +146,7 @@ export default function CustomizationPage() {
         </div>
 
         <div>
-          <label className="mb-2 block text-[13px] font-medium text-zinc-100">What traits should T3 Chat have?</label>
+          <label className="mb-2 block text-[13px] font-medium text-zinc-100">What traits should NOVA have?</label>
           <div className="relative flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-[#2a1e2e] bg-[#15101a]/70 px-2 py-1.5 pr-16 focus-within:border-zinc-700">
             {traits.map((t) => (
               <span
@@ -185,7 +185,7 @@ export default function CustomizationPage() {
         </div>
 
         <div>
-          <label className="mb-2 block text-[13px] font-medium text-zinc-100">Anything else T3 Chat should know about you?</label>
+          <label className="mb-2 block text-[13px] font-medium text-zinc-100">Anything else NOVA should know about you?</label>
           <div className="relative">
             <textarea
               value={about}
